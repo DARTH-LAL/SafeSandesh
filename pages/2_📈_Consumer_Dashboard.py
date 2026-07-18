@@ -4,7 +4,7 @@ import html
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from textwrap import dedent, shorten
+from textwrap import dedent
 
 import pandas as pd
 import streamlit as st
@@ -132,17 +132,6 @@ def _language_name(value: str) -> str:
         "urdu": "Urdu",
     }
     return mapping.get(lang, str(value or "Unknown").strip() or "Unknown")
-
-
-def _language_badge(value: str) -> str:
-    lang = _language_name(value)
-    if lang == "Hindi":
-        return "हिं"
-    if lang == "Punjabi":
-        return "ਪੰ"
-    if lang == "Urdu":
-        return "اردو"
-    return "EN"
 
 
 def _parse_scan_timestamps(values: pd.Series) -> pd.Series:
@@ -419,39 +408,35 @@ def _hbar_rows(items: list[tuple[str, int]], color_lookup: dict[str, str] | None
     return _render_html_block("".join(rows))
 
 
-def _recent_rows(df: pd.DataFrame) -> str:
-    if df.empty:
-        return "<tr><td colspan='7' class='log-empty'>No scan history yet.</td></tr>"
-
-    rows = []
-    for idx, (_, row) in enumerate(df.head(16).iterrows(), start=1):
-        label = row.get("label_norm") or "unknown"
-        color = VERDICT_COLORS.get(label, "#8ce6ff")
-        ts = row.get("ts")
-        timestamp = ts.strftime("%b %d · %H:%M") if pd.notna(ts) else "Unknown"
-        scam_type = str(row.get("scam_type_clean") or "Other")
-        message = shorten(str(row.get("message") or ""), width=112, placeholder="...")
-        rows.append(
-            f"""
-            <tr class='row-{html.escape(label)}'>
-              <td>{idx:02d}</td>
-              <td>{html.escape(timestamp)}</td>
-              <td><span class='verdict-pip {html.escape(label)}'><span class='pip {html.escape(label)}'></span>{html.escape(label.title())}</span></td>
-              <td>{html.escape(scam_type)}</td>
-              <td><span class='score-chip {html.escape(label)}'>{int(row.get('risk_score') or 0)}/100</span></td>
-              <td><span class='lang-pip'>{html.escape(_language_badge(str(row.get('language_name') or 'Unknown')))}</span></td>
-              <td><span class='log-preview'>{html.escape(message)}</span></td>
-            </tr>
-            """
-        )
-    return _render_html_block("".join(rows))
-
-
-def _download_frame(df: pd.DataFrame) -> pd.DataFrame:
-    cols = ["ts", "language_name", "label", "scam_type_clean", "risk_score", "reason", "message"]
-    out = df[[col for col in cols if col in df.columns]].copy() if not df.empty else pd.DataFrame(columns=cols)
-    rename = {"language_name": "language", "scam_type_clean": "scam_type"}
-    return out.rename(columns=rename)
+def _download_frame(
+    *,
+    period: str,
+    language: str,
+    total_scans: int,
+    phishing_count: int,
+    suspicious_count: int,
+    safe_count: int,
+    feedback_total: int,
+    feedback_wrong: int,
+    verdict_items: list[tuple[str, int]],
+    language_items: list[tuple[str, int]],
+    scam_items: list[tuple[str, int]],
+) -> pd.DataFrame:
+    """Public export: aggregate dashboard data only, never raw messages."""
+    rows = [
+        {"section": "filters", "metric": "period", "value": period},
+        {"section": "filters", "metric": "language", "value": language},
+        {"section": "summary", "metric": "total_scans", "value": total_scans},
+        {"section": "summary", "metric": "phishing_detected", "value": phishing_count},
+        {"section": "summary", "metric": "suspicious", "value": suspicious_count},
+        {"section": "summary", "metric": "safe_messages", "value": safe_count},
+        {"section": "summary", "metric": "feedback_received", "value": feedback_total},
+        {"section": "summary", "metric": "wrong_prediction_feedback", "value": feedback_wrong},
+    ]
+    rows.extend({"section": "verdict_breakdown", "metric": name, "value": count} for name, count in verdict_items)
+    rows.extend({"section": "language_distribution", "metric": name, "value": count} for name, count in language_items)
+    rows.extend({"section": "scam_type_distribution", "metric": name, "value": count} for name, count in scam_items)
+    return pd.DataFrame(rows, columns=["section", "metric", "value"])
 
 
 st.set_page_config(page_title="Consumer Dashboard", layout="wide", initial_sidebar_state="collapsed")
@@ -466,7 +451,7 @@ st.markdown(
         <div class='dash-term-wrap'>
           <div class='dash-term-line'>
             <span class='dash-term-prompt'>root@safesandesh:~$</span>
-            <span class='dash-term-cmd'>consumer-dashboard --activity --history --live</span>
+            <span class='dash-term-cmd'>consumer-dashboard --aggregate --privacy-safe --live</span>
             <span class='dash-term-sep'>|</span>
             <span class='dash-term-live'><span class='dash-live-dot'></span>LIVE DATA</span>
             <span class='dash-term-sep'>|</span>
@@ -521,9 +506,20 @@ selected_language_tag = language_tag_map.get(lang_selected, "all languages")
 selected_context_tag = f"{selected_period_tag} · {selected_language_tag}"
 
 csv_bytes = b""
-export_df = _download_frame(df)
-if not export_df.empty:
-    csv_bytes = export_df.to_csv(index=False).encode("utf-8")
+export_df = _download_frame(
+    period=selected_period_tag,
+    language=selected_language_tag,
+    total_scans=total_scans,
+    phishing_count=phishing_count,
+    suspicious_count=suspicious_count,
+    safe_count=safe_count,
+    feedback_total=feedback_total,
+    feedback_wrong=feedback_wrong,
+    verdict_items=verdict_items,
+    language_items=language_items,
+    scam_items=scam_items,
+)
+csv_bytes = export_df.to_csv(index=False).encode("utf-8")
 
 st.markdown(
     _render_html_block(
@@ -668,7 +664,6 @@ st.markdown(
         .stat-trend.flat { color:#b9d2db; text-shadow:0 0 8px rgba(185,210,219,0.20); }
         .grid-2-1 { display:grid; grid-template-columns:2fr 1fr; gap:1.4rem; margin-bottom:1.6rem; }
         .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.4rem; margin-bottom:1.6rem; }
-        .grid-single { margin-bottom:1.15rem; }
         .panel {
           background:var(--consumer-panel);
           border:1px solid var(--consumer-border);
@@ -780,59 +775,6 @@ st.markdown(
         .hbar-val { color:var(--consumer-muted); }
         .hbar-track { height:7px; background:rgba(255,255,255,0.06); }
         .hbar-fill { height:100%; transform-origin:left center; }
-        .log-toolbar {
-          display:flex;
-          justify-content:flex-end;
-          gap:0.65rem;
-          padding:0.7rem 1.08rem;
-          border-bottom:1px solid rgba(0,255,159,0.12);
-        }
-        .log-count {
-          font-family:'Share Tech Mono', monospace;
-          color:var(--consumer-muted);
-          font-size:0.64rem;
-          letter-spacing:0.08em;
-          text-transform:uppercase;
-        }
-        .log-table-wrap { overflow-x:auto; }
-        .log-table { width:100%; border-collapse:collapse; }
-        .log-table th {
-          font-family:'Share Tech Mono', monospace;
-          font-size:0.6rem;
-          color:var(--consumer-cyan);
-          text-transform:uppercase;
-          letter-spacing:0.1em;
-          text-align:left;
-          padding:0.5rem 0.72rem;
-          border-bottom:1px solid var(--consumer-border);
-        }
-        .log-table td {
-          font-family:'Share Tech Mono', monospace;
-          font-size:0.74rem;
-          color:var(--consumer-muted);
-          padding:0.6rem 0.72rem;
-          border-bottom:1px solid rgba(0,255,159,0.05);
-          vertical-align:middle;
-        }
-        .log-table td:first-child { color:var(--consumer-text); }
-        .verdict-pip { display:inline-flex; align-items:center; gap:0.34rem; font-weight:900; font-size:0.66rem; letter-spacing:0.07em; text-transform:uppercase; }
-        .pip { width:6px; height:6px; border-radius:50%; }
-        .pip.phishing { background:var(--consumer-red); box-shadow:0 0 6px var(--consumer-red); }
-        .pip.suspicious { background:var(--consumer-yellow); box-shadow:0 0 6px var(--consumer-yellow); }
-        .pip.safe { background:var(--consumer-green); box-shadow:0 0 6px var(--consumer-green); }
-        .verdict-pip.phishing { color:var(--consumer-red); }
-        .verdict-pip.suspicious { color:var(--consumer-yellow); }
-        .verdict-pip.safe { color:var(--consumer-green); }
-        .score-chip { font-size:0.6rem; padding:0.1rem 0.4rem; border:1px solid; }
-        .score-chip.phishing { color:var(--consumer-red); border-color:rgba(255,56,96,.35); }
-        .score-chip.suspicious { color:var(--consumer-yellow); border-color:rgba(255,221,87,.35); }
-        .score-chip.safe { color:var(--consumer-green); border-color:rgba(0,255,159,.35); }
-        .lang-pip { display:inline-block; font-size:0.58rem; padding:0.1rem 0.36rem; border:1px solid rgba(0,212,255,.28); color:var(--consumer-cyan); }
-        .log-preview { max-width:520px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:rgba(200,240,224,0.58); display:inline-block; }
-        .log-table tr.row-phishing td:first-child { border-left:3px solid var(--consumer-red); padding-left:0.56rem; }
-        .log-table tr.row-suspicious td:first-child { border-left:3px solid var(--consumer-yellow); padding-left:0.56rem; }
-        .log-table tr.row-safe td:first-child { border-left:3px solid var(--consumer-green); padding-left:0.56rem; }
-        .log-table tr:hover td { background:rgba(0,255,159,0.015); }
         .log-empty { font-family:'Share Tech Mono', monospace; font-size:0.72rem; color:var(--consumer-muted); text-align:center; padding:1.2rem; letter-spacing:0.08em; }
         @media (max-width: 1200px) {
           .stat-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
@@ -900,7 +842,7 @@ st.markdown(
             <span class='section-code'>// 02</span>
             <h1 class='page-h1'>Consumer Dashboard</h1>
           </div>
-          <p class='page-sub'>User-facing analytics for scan history, language coverage, scam categories, verdict counts, feedback volume, and recent activity. Model comparisons and technical evaluation stay in the private analyst app.</p>
+          <p class='page-sub'>Privacy-safe user analytics for scan volume, language coverage, scam categories, verdict counts, and feedback volume. Individual messages and model comparisons stay in the private analyst app.</p>
         </div>
         """
     ),
@@ -933,9 +875,9 @@ with filters_mid:
 with filters_right:
     st.markdown("<div class='dash-filter-label'>Export:</div>", unsafe_allow_html=True)
     st.download_button(
-        label="Download CSV",
+        label="Download Summary CSV",
         data=csv_bytes,
-        file_name="consumer_scan_history.csv",
+        file_name="consumer_dashboard_summary.csv",
         mime="text/csv",
         key="dash_export_csv",
         disabled=not bool(csv_bytes),
@@ -1019,22 +961,6 @@ st.markdown(
             </div>
           </div>
 
-          <div class='grid-single'>
-            <div class='panel accent-cyan'>
-              <div class='panel-head'><div class='panel-title'>Recent Scan Log</div><span class='panel-tag'>{total_scans:,} matching scans</span></div>
-              <div class='log-toolbar'><span class='log-count'>showing latest {min(total_scans, 16):,} scans · no model internals</span></div>
-              <div class='panel-body' style='padding:0;'>
-                <div class='log-table-wrap'>
-                  <table class='log-table'>
-                    <thead>
-                      <tr><th>#</th><th>Timestamp</th><th>Verdict</th><th>Scam Type</th><th>Score</th><th>Lang</th><th>Message Preview</th></tr>
-                    </thead>
-                    <tbody>{_recent_rows(df)}</tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         """
     ),
