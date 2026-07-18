@@ -101,6 +101,119 @@ TIER_I18N = {
     "ur": {"low": "کم", "medium": "درمیانہ", "high": "زیادہ", "critical": "انتہائی"},
 }
 
+RESULT_UI_I18N = {
+    "en": {
+        "risk_analysis": "Risk Analysis",
+        "model_confidence": "Model Confidence",
+        "message_highlights": "Message Highlights",
+        "paste_message": "Paste your message",
+        "what_you_should_do": "What You Should Do",
+        "output_language": "Output Language",
+        "analyze_message": "▶ Analyze Message",
+        "reanalyze_message": "↻ Re-Analyze Message",
+        "auto_decision": "Auto Decision",
+        "low_confidence": "Low Confidence",
+        "category_tooltip_title": "What is this category?",
+        "scale_low": "LOW",
+        "scale_med": "MED",
+        "scale_high": "HIGH",
+        "scale_crit": "CRIT",
+        "legend_high_risk": "High-risk cue",
+        "legend_suspicious": "Suspicious phrase",
+        "matched_cues": "Matched cues",
+        "no_major_cues": "No major scam cues detected in this message pattern.",
+        "some_suspicious": "Some suspicious patterns detected; the scanner is staying cautious.",
+        "multiple_high_risk": "Multiple high-risk patterns matched this message.",
+        "lower_confidence_signal": "Lower-confidence signal; use the score and model comparison together.",
+        "auto_decision_text": "Automatic verdict based on the score, cue evidence, and model comparison.",
+        "low_confidence_text": "Lower-confidence signal; the final verdict is still generated automatically.",
+    },
+    "hi": {
+        "risk_analysis": "जोखिम विश्लेषण",
+        "model_confidence": "मॉडल भरोसा",
+        "message_highlights": "संदेश संकेत",
+        "paste_message": "अपना संदेश पेस्ट करें",
+        "what_you_should_do": "आपको क्या करना चाहिए",
+        "output_language": "आउटपुट भाषा",
+        "analyze_message": "▶ संदेश जांचें",
+        "reanalyze_message": "↻ संदेश फिर जांचें",
+        "auto_decision": "स्वचालित निर्णय",
+        "low_confidence": "कम भरोसा",
+        "category_tooltip_title": "यह श्रेणी क्या है?",
+        "scale_low": "कम",
+        "scale_med": "मध्यम",
+        "scale_high": "उच्च",
+        "scale_crit": "गंभीर",
+        "legend_high_risk": "उच्च-जोखिम संकेत",
+        "legend_suspicious": "संदिग्ध वाक्यांश",
+        "matched_cues": "पहचाने गए संकेत",
+        "no_major_cues": "इस संदेश में बड़े scam संकेत नहीं मिले।",
+        "some_suspicious": "कुछ संदिग्ध संकेत मिले हैं, इसलिए scanner सावधानी दिखा रहा है।",
+        "multiple_high_risk": "इस संदेश में कई उच्च-जोखिम संकेत मिले हैं।",
+        "lower_confidence_signal": "मॉडल भरोसा कम है; score और model comparison को साथ में देखें।",
+        "auto_decision_text": "यह स्वचालित निर्णय score, संकेतों और model comparison पर आधारित है।",
+        "low_confidence_text": "मॉडल भरोसा कम है, लेकिन अंतिम verdict अभी भी automatically बनाया गया है।",
+    },
+    "pa": {
+        "risk_analysis": "ਜੋਖਿਮ ਵਿਸ਼ਲੇਸ਼ਣ",
+        "model_confidence": "ਮਾਡਲ ਭਰੋਸਾ",
+        "message_highlights": "ਸੁਨੇਹਾ ਸੰਕੇਤ",
+        "paste_message": "ਆਪਣਾ ਸੁਨੇਹਾ ਪੇਸਟ ਕਰੋ",
+        "what_you_should_do": "ਤੁਹਾਨੂੰ ਕੀ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ",
+        "output_language": "ਆਉਟਪੁੱਟ ਭਾਸ਼ਾ",
+        "analyze_message": "▶ ਸੁਨੇਹਾ ਜਾਂਚੋ",
+        "reanalyze_message": "↻ ਸੁਨੇਹਾ ਮੁੜ ਜਾਂਚੋ",
+        "auto_decision": "ਆਟੋਮੈਟਿਕ ਫੈਸਲਾ",
+        "low_confidence": "ਘੱਟ ਭਰੋਸਾ",
+        "category_tooltip_title": "ਇਹ ਸ਼੍ਰੇਣੀ ਕੀ ਹੈ?",
+        "scale_low": "ਘੱਟ",
+        "scale_med": "ਮੱਧਮ",
+        "scale_high": "ਉੱਚ",
+        "scale_crit": "ਗੰਭੀਰ",
+        "legend_high_risk": "ਉੱਚ-ਜੋਖਿਮ ਸੰਕੇਤ",
+        "legend_suspicious": "ਸ਼ੱਕੀ ਵਾਕ",
+        "matched_cues": "ਪਛਾਣੇ ਗਏ ਸੰਕੇਤ",
+        "no_major_cues": "ਇਸ ਸੁਨੇਹੇ ਵਿੱਚ ਵੱਡੇ scam ਸੰਕੇਤ ਨਹੀਂ ਮਿਲੇ।",
+        "some_suspicious": "ਕੁਝ ਸ਼ੱਕੀ ਸੰਕੇਤ ਮਿਲੇ ਹਨ, ਇਸ ਲਈ scanner ਸਾਵਧਾਨ ਹੈ।",
+        "multiple_high_risk": "ਇਸ ਸੁਨੇਹੇ ਵਿੱਚ ਕਈ ਉੱਚ-ਜੋਖਿਮ ਸੰਕੇਤ ਮਿਲੇ ਹਨ।",
+        "lower_confidence_signal": "ਮਾਡਲ ਭਰੋਸਾ ਘੱਟ ਹੈ; score ਅਤੇ model comparison ਨੂੰ ਇਕੱਠੇ ਵੇਖੋ।",
+        "auto_decision_text": "ਇਹ ਆਟੋਮੈਟਿਕ ਫੈਸਲਾ score, ਸੰਕੇਤਾਂ ਅਤੇ model comparison 'ਤੇ ਆਧਾਰਿਤ ਹੈ।",
+        "low_confidence_text": "ਮਾਡਲ ਭਰੋਸਾ ਘੱਟ ਹੈ, ਪਰ ਅੰਤਿਮ verdict ਹਾਲੇ ਵੀ automatically ਬਣਾਇਆ ਗਿਆ ਹੈ।",
+    },
+    "ur": {
+        "risk_analysis": "خطرے کا تجزیہ",
+        "model_confidence": "ماڈل اعتماد",
+        "message_highlights": "پیغام کے اشارے",
+        "paste_message": "اپنا پیغام پیسٹ کریں",
+        "what_you_should_do": "آپ کو کیا کرنا چاہیے",
+        "output_language": "آؤٹ پٹ زبان",
+        "analyze_message": "▶ پیغام چیک کریں",
+        "reanalyze_message": "↻ پیغام دوبارہ چیک کریں",
+        "auto_decision": "خودکار فیصلہ",
+        "low_confidence": "کم اعتماد",
+        "category_tooltip_title": "یہ زمرہ کیا ہے؟",
+        "scale_low": "کم",
+        "scale_med": "درمیانہ",
+        "scale_high": "زیادہ",
+        "scale_crit": "انتہائی",
+        "legend_high_risk": "زیادہ خطرے کا اشارہ",
+        "legend_suspicious": "مشکوک جملہ",
+        "matched_cues": "پہچانے گئے اشارے",
+        "no_major_cues": "اس پیغام میں بڑے scam اشارے نہیں ملے۔",
+        "some_suspicious": "کچھ مشکوک اشارے ملے ہیں، اس لیے scanner احتیاط دکھا رہا ہے۔",
+        "multiple_high_risk": "اس پیغام میں کئی زیادہ خطرے والے اشارے ملے ہیں۔",
+        "lower_confidence_signal": "ماڈل اعتماد کم ہے؛ score اور model comparison کو ساتھ دیکھیں۔",
+        "auto_decision_text": "یہ خودکار فیصلہ score، اشاروں اور model comparison پر مبنی ہے۔",
+        "low_confidence_text": "ماڈل اعتماد کم ہے، لیکن آخری verdict ابھی بھی automatically بنایا گیا ہے۔",
+    },
+}
+
+CONFIDENCE_LEVEL_I18N = {
+    "hi": {"very high": "बहुत उच्च", "high": "उच्च", "medium": "मध्यम", "low": "कम"},
+    "pa": {"very high": "ਬਹੁਤ ਉੱਚ", "high": "ਉੱਚ", "medium": "ਮੱਧਮ", "low": "ਘੱਟ"},
+    "ur": {"very high": "بہت زیادہ", "high": "زیادہ", "medium": "درمیانہ", "low": "کم"},
+}
+
 
 def _init_state() -> None:
     st.session_state.setdefault("detector_message_input", "")
@@ -241,6 +354,26 @@ def _localized_tier(tier: str, lang_code: str) -> str:
     return TIER_I18N.get(lang_code, {}).get(key, tier or "Low")
 
 
+def _ui_text(lang_code: str, key: str) -> str:
+    return RESULT_UI_I18N.get(lang_code, RESULT_UI_I18N["en"]).get(key, RESULT_UI_I18N["en"][key])
+
+
+def _localized_confidence_level(level: str, lang_code: str) -> str:
+    key = (level or "low").strip().lower()
+    if lang_code == "en":
+        return (level or "LOW").upper()
+    return CONFIDENCE_LEVEL_I18N.get(lang_code, {}).get(key, level or "LOW")
+
+
+def _localized_decision_label(label: str, lang_code: str) -> str:
+    normalized = (label or "Auto decision").strip().lower().replace("_", " ")
+    if normalized in {"auto decision", "auto", "automatic decision"}:
+        return _ui_text(lang_code, "auto_decision")
+    if normalized in {"low confidence", "uncertain", "needs review"}:
+        return _ui_text(lang_code, "low_confidence")
+    return label or _ui_text(lang_code, "auto_decision")
+
+
 def _score_to_visible_label(score: int) -> str:
     value = max(0, min(100, int(score or 0)))
     if value <= 30:
@@ -296,20 +429,21 @@ def _format_confidence_pct(conf: float) -> tuple[str, float]:
     return text, pct
 
 
-def _confidence_desc(result: dict) -> str:
+def _confidence_desc(result: dict, lang_code: str = "en") -> str:
     if result.get("review_recommended"):
-        return "Lower-confidence signal; use the score and model comparison together."
+        return _ui_text(lang_code, "lower_confidence_signal")
 
-    cues = result.get("cue_labels") or []
+    cue_tags = result.get("cue_tags") or []
+    cues = explain_cue_labels(cue_tags, lang_code) if cue_tags else (result.get("cue_labels") or [])
     if cues:
-        return f"Matched cues: {', '.join(cues[:4])}."
+        return f"{_ui_text(lang_code, 'matched_cues')}: {', '.join(cues[:4])}."
 
     label = (result.get("label") or "").lower()
     if label == "safe":
-        return "No major scam cues detected in this message pattern."
+        return _ui_text(lang_code, "no_major_cues")
     if label == "suspicious":
-        return "Some suspicious patterns detected; the scanner is staying cautious."
-    return "Multiple high-risk patterns matched this message."
+        return _ui_text(lang_code, "some_suspicious")
+    return _ui_text(lang_code, "multiple_high_risk")
 
 
 SIMPLE_RISK_REASON_COPY = {
@@ -2802,16 +2936,18 @@ def _render_result_state(result: dict, message: str, lang_name: str) -> None:
     confidence = float(result.get("model_confidence", 0.0))
     confidence_text, confidence_pct = _format_confidence_pct(confidence)
     confidence_level = _confidence_level(confidence)
+    confidence_level_display = _localized_confidence_level(confidence_level, lang_code)
     tooltip = SCAM_TYPE_TOOLTIP.get(scam_type, SCAM_TYPE_TOOLTIP["Other"])
     review_recommended = bool(result.get("review_recommended", False))
     decision_label = str(result.get("decision_label", "Auto decision"))
     if decision_label.strip().lower() in {"uncertain", "needs review", "needs_review"}:
         decision_label = "Auto decision"
+    decision_label_display = _localized_decision_label(decision_label, lang_code)
     review_reason = str(result.get("review_reason") or result.get("abstain_reason") or "")
     decision_text = review_reason or (
-        "Automatic verdict based on the score, cue evidence, and model comparison."
+        _ui_text(lang_code, "auto_decision_text")
         if not review_recommended
-        else "Lower-confidence signal; the final verdict is still generated automatically."
+        else _ui_text(lang_code, "low_confidence_text")
     )
 
     reasons = _simple_consumer_reasons(result, message, verdict_class, lang_code)
@@ -2851,14 +2987,14 @@ def _render_result_state(result: dict, message: str, lang_name: str) -> None:
           <div class="badge-wrap">
             <span class="scam-type-badge {verdict_class}" title="{html.escape(tooltip)}">{html.escape(scam_type)} ⓘ</span>
             <div class="scam-tooltip">
-              <div class="tooltip-title">What is this category?</div>
+              <div class="tooltip-title">{html.escape(_ui_text(lang_code, "category_tooltip_title"))}</div>
               <div class="tooltip-body">{html.escape(tooltip)}</div>
             </div>
           </div>
         </div>
         <div class="result-body">
           <div>
-            <div class="res-label">Risk Analysis</div>
+            <div class="res-label">{html.escape(_ui_text(lang_code, "risk_analysis"))}</div>
             <div class="score-conf-row">
               <div class="score-block">
                 <div class="score-circle {verdict_class}">
@@ -2868,23 +3004,23 @@ def _render_result_state(result: dict, message: str, lang_name: str) -> None:
                 <div class="score-details">
                   <div class="tier-label {verdict_class}">{html.escape(tier_display)}</div>
                   <div class="risk-bar-full"><div class="risk-fill-anim {verdict_class}" style="width:{score}%"></div></div>
-                  <div class="risk-ticks"><span>LOW</span><span>MED</span><span>HIGH</span><span>CRIT</span></div>
+                  <div class="risk-ticks"><span>{html.escape(_ui_text(lang_code, "scale_low"))}</span><span>{html.escape(_ui_text(lang_code, "scale_med"))}</span><span>{html.escape(_ui_text(lang_code, "scale_high"))}</span><span>{html.escape(_ui_text(lang_code, "scale_crit"))}</span></div>
                 </div>
               </div>
               <div class="conf-block">
                 <div class="conf-top">
                   <div class="conf-head">
-                    <div class="conf-label">Model Confidence</div>
-                    <div class="conf-sublabel">{html.escape(confidence_level)}</div>
+                    <div class="conf-label">{html.escape(_ui_text(lang_code, "model_confidence"))}</div>
+                    <div class="conf-sublabel">{html.escape(confidence_level_display)}</div>
                   </div>
                   <div class="conf-pct">{confidence_text}</div>
                 </div>
                 <div class="conf-bar-wrap"><div class="conf-fill" style="width:{confidence_pct:.1f}%"></div></div>
-                <div class="conf-desc">{html.escape(_confidence_desc(result))}</div>
+                <div class="conf-desc">{html.escape(_confidence_desc(result, lang_code))}</div>
               </div>
             </div>
             <div class="decision-callout {'review' if review_recommended else 'auto'}">
-              <div class="decision-title">{html.escape(decision_label.upper())}</div>
+              <div class="decision-title">{html.escape(decision_label_display.upper() if lang_code == "en" else decision_label_display)}</div>
               <div class="decision-text">{html.escape(decision_text)}</div>
             </div>
           </div>
@@ -2892,9 +3028,9 @@ def _render_result_state(result: dict, message: str, lang_name: str) -> None:
           <hr class="result-divider">
 
           <div>
-            <div class="res-label">Message Highlights</div>
+            <div class="res-label">{html.escape(_ui_text(lang_code, "message_highlights"))}</div>
             <div class="highlight-box">{_highlight_message(message, result.get("cue_tags") or [])}</div>
-            <div class="hl-legend"><span>🔴 High-risk cue</span><span>🟡 Suspicious phrase</span></div>
+            <div class="hl-legend"><span>🔴 {html.escape(_ui_text(lang_code, "legend_high_risk"))}</span><span>🟡 {html.escape(_ui_text(lang_code, "legend_suspicious"))}</span></div>
           </div>
 
           <hr class="result-divider">
@@ -2907,14 +3043,14 @@ def _render_result_state(result: dict, message: str, lang_name: str) -> None:
           <hr class="result-divider">
 
           <div>
-            <div class="res-label">What You Should Do</div>
+            <div class="res-label">{html.escape(_ui_text(lang_code, "what_you_should_do"))}</div>
             <div class="action-list">{actions_html}</div>
           </div>
 
           <hr class="result-divider">
 
           <div>
-            <div class="res-label">Output Language</div>
+            <div class="res-label">{html.escape(_ui_text(lang_code, "output_language"))}</div>
             <div class="conf-desc">{html.escape(lang_name)}</div>
           </div>
         </div>
@@ -4526,7 +4662,7 @@ left, right = st.columns(2, gap="large")
 with left:
     with st.container(border=True):
         st.markdown(
-            """
+            f"""
             <div class="det-marker-input"></div>
             <div class="det-panel-titlebar">
               <div class="t-dot t-dot-red"></div>
@@ -4534,7 +4670,7 @@ with left:
               <div class="t-dot t-dot-green"></div>
               <div class="det-panel-title">message_input.py — DETECTOR</div>
             </div>
-            <div class="input-label">Paste your message</div>
+            <div class="input-label">{html.escape(_ui_text(active_lang, "paste_message"))}</div>
             """,
             unsafe_allow_html=True,
         )
@@ -4560,7 +4696,10 @@ with left:
         if input_error:
             st.markdown(f"<div class='det-inline-error'>{html.escape(input_error)}</div>", unsafe_allow_html=True)
 
-        st.markdown("<div class='det-lang-row'><span class='det-lang-label'>Output Language:</span></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='det-lang-row'><span class='det-lang-label'>{html.escape(_ui_text(active_lang, 'output_language'))}:</span></div>",
+            unsafe_allow_html=True,
+        )
         lang_cols = st.columns(4, gap="small")
         with lang_cols[0]:
             if st.button("English", key="det_lang_en", use_container_width=True):
@@ -4607,7 +4746,7 @@ with left:
             )
 
         analyze_pressed = st.button(
-            "↻ Re-Analyze Message" if has_existing_result else "▶ Analyze Message",
+            _ui_text(active_lang, "reanalyze_message") if has_existing_result else _ui_text(active_lang, "analyze_message"),
             key="detector_analyze",
             use_container_width=True,
             disabled=bool(st.session_state.get("detector_typing_active", False)),
