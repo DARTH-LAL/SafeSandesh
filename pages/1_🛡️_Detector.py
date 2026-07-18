@@ -313,40 +313,144 @@ def _confidence_desc(result: dict) -> str:
 
 
 SIMPLE_RISK_REASON_COPY = {
-    "OTP_REQUEST": "It asks for an OTP or code. Real banks and apps do not ask you to share this in a message.",
-    "KYC_UPDATE": "It asks you to update KYC or account details from a message instead of the official app.",
-    "PAYMENT_REQUEST": "It mentions payment, UPI, or a collect request, which can be used to take money from you.",
-    "ACCOUNT_THREAT": "It creates pressure by saying your account may be blocked, suspended, or needs urgent action.",
-    "LINK_PRESENT": "It includes a link. Scam links can open fake pages that steal details.",
-    "LOTTERY_PRIZE": "It uses a prize, reward, or lottery offer to make you act quickly.",
-    "DELIVERY_CUSTOMS": "It uses a delivery or customs excuse, often to push a payment or verification.",
-    "JOB_LOAN": "It uses a job or loan offer, which can lead to fake fees or stolen documents.",
+    "en": {
+        "OTP_REQUEST": "It asks for an OTP or code. Real banks and apps do not ask you to share this in a message.",
+        "KYC_UPDATE": "It asks you to update KYC or account details from a message instead of the official app.",
+        "PAYMENT_REQUEST": "It mentions payment, UPI, or a collect request, which can be used to take money from you.",
+        "ACCOUNT_THREAT": "It creates pressure by saying your account may be blocked, suspended, or needs urgent action.",
+        "LINK_PRESENT": "It includes a link. Scam links can open fake pages that steal details.",
+        "LOTTERY_PRIZE": "It uses a prize, reward, or lottery offer to make you act quickly.",
+        "DELIVERY_CUSTOMS": "It uses a delivery or customs excuse, often to push a payment or verification.",
+        "JOB_LOAN": "It uses a job or loan offer, which can lead to fake fees or stolen documents.",
+    },
+    "hi": {
+        "OTP_REQUEST": "यह ओटीपी या कोड मांगता है। असली बैंक और ऐप संदेश में इसे साझा करने को नहीं कहते।",
+        "KYC_UPDATE": "यह आधिकारिक ऐप के बजाय संदेश से KYC या खाते की जानकारी अपडेट करने को कहता है।",
+        "PAYMENT_REQUEST": "इसमें भुगतान, UPI या collect request का जिक्र है, जिससे आपके पैसे जा सकते हैं।",
+        "ACCOUNT_THREAT": "यह खाता बंद, ब्लॉक या तुरंत कार्रवाई जैसी बात कहकर दबाव बनाता है।",
+        "LINK_PRESENT": "इसमें लिंक है। नकली लिंक आपकी जानकारी चुराने वाले पेज खोल सकते हैं।",
+        "LOTTERY_PRIZE": "यह इनाम, reward या lottery का लालच देकर जल्दी कार्रवाई करवाने की कोशिश करता है।",
+        "DELIVERY_CUSTOMS": "यह delivery या customs का बहाना इस्तेमाल करता है, अक्सर भुगतान या verification करवाने के लिए।",
+        "JOB_LOAN": "यह नौकरी या loan offer का लालच देता है, जिससे fake fees या document चोरी हो सकती है।",
+    },
+    "pa": {
+        "OTP_REQUEST": "ਇਹ ਓਟੀਪੀ ਜਾਂ ਕੋਡ ਮੰਗਦਾ ਹੈ। ਅਸਲੀ ਬੈਂਕ ਅਤੇ ਐਪ ਸੁਨੇਹੇ ਵਿੱਚ ਇਹ ਸਾਂਝਾ ਕਰਨ ਲਈ ਨਹੀਂ ਕਹਿੰਦੇ।",
+        "KYC_UPDATE": "ਇਹ ਅਧਿਕਾਰਕ ਐਪ ਦੀ ਬਜਾਏ ਸੁਨੇਹੇ ਰਾਹੀਂ KYC ਜਾਂ ਖਾਤੇ ਦੀ ਜਾਣਕਾਰੀ ਅਪਡੇਟ ਕਰਨ ਲਈ ਕਹਿੰਦਾ ਹੈ।",
+        "PAYMENT_REQUEST": "ਇਸ ਵਿੱਚ ਭੁਗਤਾਨ, UPI ਜਾਂ collect request ਦੀ ਗੱਲ ਹੈ, ਜਿਸ ਨਾਲ ਤੁਹਾਡੇ ਪੈਸੇ ਜਾ ਸਕਦੇ ਹਨ।",
+        "ACCOUNT_THREAT": "ਇਹ ਖਾਤਾ ਬੰਦ, ਬਲਾਕ ਜਾਂ ਤੁਰੰਤ ਕਾਰਵਾਈ ਵਰਗੀਆਂ ਗੱਲਾਂ ਨਾਲ ਦਬਾਅ ਬਣਾਉਂਦਾ ਹੈ।",
+        "LINK_PRESENT": "ਇਸ ਵਿੱਚ ਲਿੰਕ ਹੈ। ਨਕਲੀ ਲਿੰਕ ਤੁਹਾਡੀ ਜਾਣਕਾਰੀ ਚੋਰੀ ਕਰਨ ਵਾਲੇ ਪੰਨੇ ਖੋਲ੍ਹ ਸਕਦੇ ਹਨ।",
+        "LOTTERY_PRIZE": "ਇਹ ਇਨਾਮ, reward ਜਾਂ lottery ਦਾ ਲਾਲਚ ਦੇ ਕੇ ਜਲਦੀ ਕਾਰਵਾਈ ਕਰਵਾਉਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰਦਾ ਹੈ।",
+        "DELIVERY_CUSTOMS": "ਇਹ delivery ਜਾਂ customs ਦਾ ਬਹਾਨਾ ਵਰਤਦਾ ਹੈ, ਅਕਸਰ ਭੁਗਤਾਨ ਜਾਂ verification ਲਈ।",
+        "JOB_LOAN": "ਇਹ ਨੌਕਰੀ ਜਾਂ loan offer ਦਾ ਲਾਲਚ ਦਿੰਦਾ ਹੈ, ਜਿਸ ਨਾਲ fake fees ਜਾਂ document ਚੋਰੀ ਹੋ ਸਕਦੀ ਹੈ।",
+    },
+    "ur": {
+        "OTP_REQUEST": "یہ او ٹی پی یا کوڈ مانگتا ہے۔ اصل بینک اور ایپس پیغام میں اسے شیئر کرنے کو نہیں کہتے۔",
+        "KYC_UPDATE": "یہ آفیشل ایپ کے بجائے پیغام سے KYC یا اکاؤنٹ معلومات اپ ڈیٹ کرنے کو کہتا ہے۔",
+        "PAYMENT_REQUEST": "اس میں ادائیگی، UPI یا collect request کا ذکر ہے، جس سے آپ کے پیسے جا سکتے ہیں۔",
+        "ACCOUNT_THREAT": "یہ اکاؤنٹ بند، بلاک یا فوری کارروائی جیسی باتوں سے دباؤ بناتا ہے۔",
+        "LINK_PRESENT": "اس میں لنک ہے۔ جعلی لنک آپ کی معلومات چرانے والے صفحات کھول سکتے ہیں۔",
+        "LOTTERY_PRIZE": "یہ انعام، reward یا lottery کا لالچ دے کر جلدی کارروائی کروانے کی کوشش کرتا ہے۔",
+        "DELIVERY_CUSTOMS": "یہ delivery یا customs کا بہانہ استعمال کرتا ہے، اکثر ادائیگی یا verification کے لیے۔",
+        "JOB_LOAN": "یہ نوکری یا loan offer کا لالچ دیتا ہے، جس سے fake fees یا documents چوری ہو سکتے ہیں۔",
+    },
 }
 
 
-def _simple_consumer_reasons(result: dict, message: str, verdict_class: str) -> list[str]:
+SIMPLE_SAFE_REASON_COPY = {
+    "en": {
+        "with_tags": [
+            "This looks safe because it does not ask you to pay, click a suspicious link, or share secrets.",
+            "Still, only use the official app or website if you want to check the message.",
+        ],
+        "no_tags": ["No strong scam signs were found in this message."],
+        "suspicious_fallback": ["This message has some warning signs. Check it in the official app before doing anything."],
+        "phishing_fallback": ["This message looks similar to known scam patterns. Do not act on it until you verify it directly."],
+    },
+    "hi": {
+        "with_tags": [
+            "यह संदेश सुरक्षित लगता है क्योंकि यह भुगतान, संदिग्ध लिंक पर क्लिक या गुप्त जानकारी साझा करने को नहीं कहता।",
+            "फिर भी, संदेश जांचने के लिए केवल आधिकारिक ऐप या वेबसाइट का उपयोग करें।",
+        ],
+        "no_tags": ["इस संदेश में कोई मजबूत scam संकेत नहीं मिला।"],
+        "suspicious_fallback": ["इस संदेश में कुछ चेतावनी संकेत हैं। कुछ भी करने से पहले आधिकारिक ऐप में जांचें।"],
+        "phishing_fallback": ["यह संदेश known scam pattern जैसा लगता है। सीधे verify करने से पहले कोई कार्रवाई न करें।"],
+    },
+    "pa": {
+        "with_tags": [
+            "ਇਹ ਸੁਨੇਹਾ ਸੁਰੱਖਿਅਤ ਲੱਗਦਾ ਹੈ ਕਿਉਂਕਿ ਇਹ ਭੁਗਤਾਨ, ਸੰਦੇਹਜਨਕ ਲਿੰਕ 'ਤੇ ਕਲਿੱਕ ਜਾਂ ਗੁਪਤ ਜਾਣਕਾਰੀ ਸਾਂਝੀ ਕਰਨ ਲਈ ਨਹੀਂ ਕਹਿੰਦਾ।",
+            "ਫਿਰ ਵੀ, ਸੁਨੇਹਾ ਚੈਕ ਕਰਨ ਲਈ ਕੇਵਲ ਅਧਿਕਾਰਕ ਐਪ ਜਾਂ ਵੈਬਸਾਈਟ ਵਰਤੋ।",
+        ],
+        "no_tags": ["ਇਸ ਸੁਨੇਹੇ ਵਿੱਚ ਕੋਈ ਮਜ਼ਬੂਤ scam ਸੰਕੇਤ ਨਹੀਂ ਮਿਲਿਆ।"],
+        "suspicious_fallback": ["ਇਸ ਸੁਨੇਹੇ ਵਿੱਚ ਕੁਝ ਚੇਤਾਵਨੀ ਸੰਕੇਤ ਹਨ। ਕੁਝ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਅਧਿਕਾਰਕ ਐਪ ਵਿੱਚ ਚੈਕ ਕਰੋ।"],
+        "phishing_fallback": ["ਇਹ ਸੁਨੇਹਾ known scam pattern ਵਰਗਾ ਲੱਗਦਾ ਹੈ। ਸਿੱਧੀ ਤਸਦੀਕ ਤੋਂ ਪਹਿਲਾਂ ਕੋਈ ਕਾਰਵਾਈ ਨਾ ਕਰੋ।"],
+    },
+    "ur": {
+        "with_tags": [
+            "یہ پیغام محفوظ لگتا ہے کیونکہ یہ ادائیگی، مشکوک لنک پر کلک یا خفیہ معلومات شیئر کرنے کو نہیں کہتا۔",
+            "پھر بھی، پیغام چیک کرنے کے لیے صرف آفیشل ایپ یا ویب سائٹ استعمال کریں۔",
+        ],
+        "no_tags": ["اس پیغام میں کوئی مضبوط scam اشارہ نہیں ملا۔"],
+        "suspicious_fallback": ["اس پیغام میں کچھ warning signs ہیں۔ کچھ کرنے سے پہلے آفیشل ایپ میں چیک کریں۔"],
+        "phishing_fallback": ["یہ پیغام known scam pattern جیسا لگتا ہے۔ براہ راست verify کیے بغیر کوئی کارروائی نہ کریں۔"],
+    },
+}
+
+
+REASON_HEADING_I18N = {
+    "en": {
+        "safe": "Why This Looks Safe",
+        "suspicious": "Why This Needs Caution",
+        "phishing": "Why This Is Risky",
+    },
+    "hi": {
+        "safe": "यह सुरक्षित क्यों लगता है",
+        "suspicious": "इसमें सावधानी क्यों चाहिए",
+        "phishing": "यह जोखिम भरा क्यों है",
+    },
+    "pa": {
+        "safe": "ਇਹ ਸੁਰੱਖਿਅਤ ਕਿਉਂ ਲੱਗਦਾ ਹੈ",
+        "suspicious": "ਇਸ ਵਿੱਚ ਸਾਵਧਾਨੀ ਕਿਉਂ ਚਾਹੀਦੀ ਹੈ",
+        "phishing": "ਇਹ ਜੋਖਿਮ ਭਰਿਆ ਕਿਉਂ ਹੈ",
+    },
+    "ur": {
+        "safe": "یہ محفوظ کیوں لگتا ہے",
+        "suspicious": "اس میں احتیاط کیوں چاہیے",
+        "phishing": "یہ خطرناک کیوں ہے",
+    },
+}
+
+
+DEFAULT_ACTION_I18N = {
+    "en": ["Cross-check through official channels before acting."],
+    "hi": ["कुछ भी करने से पहले आधिकारिक चैनल से जांच करें।"],
+    "pa": ["ਕੁਝ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਅਧਿਕਾਰਕ ਚੈਨਲ ਰਾਹੀਂ ਪੁਸ਼ਟੀ ਕਰੋ।"],
+    "ur": ["کچھ کرنے سے پہلے آفیشل ذرائع سے تصدیق کریں۔"],
+}
+
+
+def _simple_consumer_reasons(result: dict, message: str, verdict_class: str, lang_code: str = "en") -> list[str]:
     tags = list(dict.fromkeys(result.get("cue_tags") or detect_cue_tags(message or "")))
-    reasons = [SIMPLE_RISK_REASON_COPY[tag] for tag in tags if tag in SIMPLE_RISK_REASON_COPY]
+    reason_copy = SIMPLE_RISK_REASON_COPY.get(lang_code, SIMPLE_RISK_REASON_COPY["en"])
+    fallback_copy = SIMPLE_SAFE_REASON_COPY.get(lang_code, SIMPLE_SAFE_REASON_COPY["en"])
+    reasons = [reason_copy[tag] for tag in tags if tag in reason_copy]
     if verdict_class == "safe":
         if tags:
-            return [
-                "This looks safe because it does not ask you to pay, click a suspicious link, or share secrets.",
-                "Still, only use the official app or website if you want to check the message.",
-            ]
-        return ["No strong scam signs were found in this message."]
+            return fallback_copy["with_tags"]
+        return fallback_copy["no_tags"]
     if reasons:
         return reasons[:4]
     if verdict_class == "suspicious":
-        return ["This message has some warning signs. Check it in the official app before doing anything."]
-    return ["This message looks similar to known scam patterns. Do not act on it until you verify it directly."]
+        return fallback_copy["suspicious_fallback"]
+    return fallback_copy["phishing_fallback"]
 
 
-def _consumer_reason_heading(verdict_class: str) -> str:
+def _consumer_reason_heading(verdict_class: str, lang_code: str = "en") -> str:
+    headings = REASON_HEADING_I18N.get(lang_code, REASON_HEADING_I18N["en"])
     if verdict_class == "safe":
-        return "Why This Looks Safe"
+        return headings["safe"]
     if verdict_class == "suspicious":
-        return "Why This Needs Caution"
-    return "Why This Is Risky"
+        return headings["suspicious"]
+    return headings["phishing"]
 
 
 def _highlight_message(text: str, cue_tags: list[str] | None = None) -> str:
@@ -392,7 +496,8 @@ def _validate_message_for_analysis(message: str) -> str | None:
 def _build_report(result: dict, message: str, lang_name: str, comparison: dict | None = None) -> str:
     result = _normalize_visible_result(result)
     verdict_class = _label_class(str(result.get("label", "Safe")))
-    reasons = _simple_consumer_reasons(result, message, verdict_class)
+    lang_code = _lang_code_from_name(lang_name)
+    reasons = _simple_consumer_reasons(result, message, verdict_class, lang_code)
     reasons_text = "\n".join([f"  - {reason}" for reason in reasons])
     actions = result.get("actions", [])
     actions_text = "\n".join([f"  {i + 1}. {x}" for i, x in enumerate(actions)])
@@ -2707,10 +2812,10 @@ def _render_result_state(result: dict, message: str, lang_name: str) -> None:
         else "Lower-confidence signal; the final verdict is still generated automatically."
     )
 
-    reasons = _simple_consumer_reasons(result, message, verdict_class)
-    reason_heading = _consumer_reason_heading(verdict_class)
+    reasons = _simple_consumer_reasons(result, message, verdict_class, lang_code)
+    reason_heading = _consumer_reason_heading(verdict_class, lang_code)
 
-    actions = result.get("actions") or ["Cross-check through official channels before acting."]
+    actions = result.get("actions") or DEFAULT_ACTION_I18N.get(lang_code, DEFAULT_ACTION_I18N["en"])
     reasons_html = "".join(
         [
             (
