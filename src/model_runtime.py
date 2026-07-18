@@ -51,7 +51,6 @@ from .mock_model import predict as mock_predict
 
 
 MODEL_DIR = Path(__file__).resolve().parents[1] / "data" / "models"
-LEGACY_TRANSFORMER_MODEL_PATH = MODEL_DIR / "transformer_model.joblib"
 INDICBERT_MODEL_PATH = MODEL_DIR / "indicbert_model.joblib"
 BILSTM_MODEL_PATH = MODEL_DIR / "bilstm_model.joblib"
 BASELINE_MODEL_PATH = MODEL_DIR / "baseline_model.joblib"
@@ -747,7 +746,7 @@ def _attach_bilstm_model(bundle: Dict) -> Dict:
 def _resolve_bundle_model_dir(bundle: Dict) -> Path:
     raw_dir = bundle.get("risk_model_dir")
     if raw_dir is None:
-        raise RuntimeError("Transformer bundle is missing risk_model_dir.")
+        raise RuntimeError("IndicBERT bundle is missing risk_model_dir.")
 
     path = Path(str(raw_dir))
     if path.is_absolute():
@@ -760,11 +759,11 @@ def _resolve_bundle_model_dir(bundle: Dict) -> Path:
 
 def _attach_transformer_model(bundle: Dict) -> Dict:
     if torch is None or AutoTokenizer is None or AutoModelForSequenceClassification is None:
-        raise RuntimeError("Transformers support is unavailable.")
+        raise RuntimeError("IndicBERT support is unavailable.")
 
     model_dir = _resolve_bundle_model_dir(bundle)
     if not model_dir.exists():
-        raise RuntimeError(f"Transformer model directory not found: {model_dir}")
+        raise RuntimeError(f"IndicBERT model directory not found: {model_dir}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
@@ -801,16 +800,16 @@ def _predict_risk_probs_bilstm(text: str, bundle: Dict) -> np.ndarray:
 
 def _predict_risk_probs_transformer(text: str, bundle: Dict) -> np.ndarray:
     if torch is None or AutoTokenizer is None or AutoModelForSequenceClassification is None:
-        raise RuntimeError("Transformers support is unavailable.")
+        raise RuntimeError("IndicBERT support is unavailable.")
 
     model = bundle.get("risk_model")
     tokenizer = bundle.get("risk_tokenizer")
     if model is None or tokenizer is None:
-        raise RuntimeError("Transformer model is not loaded.")
+        raise RuntimeError("IndicBERT model is not loaded.")
 
     max_length = int(bundle.get("risk_max_length", 0))
     if max_length <= 0:
-        raise RuntimeError("Transformer bundle is missing max_length metadata.")
+        raise RuntimeError("IndicBERT bundle is missing max_length metadata.")
 
     if batch_predict_logits is not None and tokenize_texts is not None:
         logits = batch_predict_logits(model, tokenizer, [text], max_length, batch_size=1, device=next(model.parameters()).device)

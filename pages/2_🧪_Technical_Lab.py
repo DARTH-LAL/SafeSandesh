@@ -110,9 +110,6 @@ def _build_model_benchmark_rows(model_specs: list[tuple[str, dict | None]]) -> t
         source = str(metrics.get("model_source", label.lower()))
         alias_to_label[version] = label
         alias_to_label[source] = label
-        if label == "IndicBERT":
-            alias_to_label.setdefault("transformer_v4", label)
-            alias_to_label.setdefault("transformer_multilingual", label)
 
         report = _metric_report(metrics)
         language_scores: dict[str, float] = {}
@@ -229,15 +226,12 @@ def _metric_temperature(metrics: dict | None) -> float | None:
 
 def _select_model_specs() -> list[tuple[str, dict | None]]:
     indicbert = _load_json(MODEL_DIR / "indicbert_metrics.json")
-    transformer = _load_json(MODEL_DIR / "transformer_metrics.json")
     bilstm = _load_json(MODEL_DIR / "bilstm_metrics.json")
     baseline = _load_json(MODEL_DIR / "baseline_metrics.json")
-    multilingual_label = "IndicBERT" if indicbert else "Transformer"
-    multilingual_metrics = indicbert or transformer
 
     candidates: list[tuple[float, str, dict | None]] = []
     for label, metrics in (
-        (multilingual_label, multilingual_metrics),
+        ("IndicBERT", indicbert),
         ("BiLSTM", bilstm),
         (FALLBACK_MODEL_LABEL, baseline),
     ):
@@ -251,12 +245,12 @@ def _select_model_specs() -> list[tuple[str, dict | None]]:
         return [(label, metrics) for _, label, metrics in candidates]
 
     if baseline:
-        return [(FALLBACK_MODEL_LABEL, baseline), ("BiLSTM", bilstm), (multilingual_label, multilingual_metrics)]
+        return [(FALLBACK_MODEL_LABEL, baseline), ("BiLSTM", bilstm), ("IndicBERT", indicbert)]
     if bilstm:
-        return [("BiLSTM", bilstm), (multilingual_label, multilingual_metrics), (FALLBACK_MODEL_LABEL, baseline)]
-    if multilingual_metrics:
-        return [(multilingual_label, multilingual_metrics), (FALLBACK_MODEL_LABEL, baseline), ("BiLSTM", bilstm)]
-    return [(multilingual_label, None), ("BiLSTM", None), (FALLBACK_MODEL_LABEL, None)]
+        return [("BiLSTM", bilstm), ("IndicBERT", indicbert), (FALLBACK_MODEL_LABEL, baseline)]
+    if indicbert:
+        return [("IndicBERT", indicbert), (FALLBACK_MODEL_LABEL, baseline), ("BiLSTM", bilstm)]
+    return [("IndicBERT", None), ("BiLSTM", None), (FALLBACK_MODEL_LABEL, None)]
 
 
 def _build_perf_data(model_specs: list[tuple[str, dict | None]]) -> list[tuple[str, str, float, float, float]]:

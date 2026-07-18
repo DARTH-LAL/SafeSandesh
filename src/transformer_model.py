@@ -15,7 +15,8 @@ except Exception:  # pragma: no cover - optional dependency guard
     AutoTokenizer = None
 
 
-DEFAULT_TRANSFORMER_NAME = "xlm-roberta-base"
+DEFAULT_INDICBERT_NAME = "ai4bharat/IndicBERTv2-MLM-only"
+DEFAULT_TRANSFORMER_NAME = DEFAULT_INDICBERT_NAME
 WHITESPACE_RE = re.compile(r"\s+", flags=re.UNICODE)
 
 

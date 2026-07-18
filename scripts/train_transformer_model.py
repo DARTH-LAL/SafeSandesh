@@ -418,30 +418,30 @@ def main() -> None:
     parser.add_argument(
         "--model-kind",
         type=str,
-        default="transformer",
+        default="indicbert",
         help="Runtime model kind stored in the saved bundle.",
     )
     parser.add_argument(
         "--model-source",
         type=str,
-        default="transformer_multilingual",
+        default="indicbert_multilingual",
         help="Human-readable model source stored in the saved bundle.",
     )
     parser.add_argument(
         "--model-dir",
         type=Path,
-        default=ROOT / "data" / "models" / "transformer_model",
+        default=ROOT / "data" / "models" / "indicbert_model",
         help="Directory where the fine-tuned transformer weights will be saved.",
     )
     parser.add_argument(
         "--model-out",
         type=Path,
-        default=ROOT / "data" / "models" / "transformer_model.joblib",
+        default=ROOT / "data" / "models" / "indicbert_model.joblib",
     )
     parser.add_argument(
         "--metrics-out",
         type=Path,
-        default=ROOT / "data" / "models" / "transformer_metrics.json",
+        default=ROOT / "data" / "models" / "indicbert_metrics.json",
     )
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--patience", type=int, default=1)
@@ -476,7 +476,7 @@ def main() -> None:
     parser.add_argument(
         "--model-version",
         type=str,
-        default="transformer_v1",
+        default="indicbert_v3",
         help="Version tag embedded into model artifact and runtime output.",
     )
     args = parser.parse_args()

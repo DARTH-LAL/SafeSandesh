@@ -283,7 +283,7 @@ def _base_model_role(item: dict, idx: int) -> tuple[str, str]:
     if "bilstm" in text:
         return ("BiLSTM model", "BILSTM")
     if "indicbert" in text or "transformer" in text:
-        return ("Transformer model", "INDICBERT")
+        return ("IndicBERT model", "INDICBERT")
     role_names = ["Base model 1", "Base model 2", "Base model 3"]
     role_tags = ["MODEL 1", "MODEL 2", "MODEL 3"]
     return (role_names[idx] if idx < len(role_names) else f"Base model {idx + 1}", role_tags[idx] if idx < len(role_tags) else f"MODEL {idx + 1}")
