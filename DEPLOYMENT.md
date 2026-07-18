@@ -1,11 +1,11 @@
 # Deployment Guide
 
-This project should be deployed as two connected views:
+This project should be deployed as one connected Streamlit app:
 
-- Consumer app online: Home, Detector, and Consumer Dashboard.
-- Technical app private: Technical Dashboard and AI Studio.
+- Public user pages: Home, Detector, and Consumer Dashboard.
+- Password-protected Admin pages: Technical Dashboard and AI Studio.
 
-Both apps can read the same Supabase database, so online scans are still visible in the local technical app.
+The Admin link is visible in the navbar, but the technical pages require the shared admin password before showing stored scan analytics, model comparisons, or AI Studio.
 
 ## 1. Create Supabase Tables
 
@@ -67,7 +67,7 @@ export SUPABASE_SERVICE_ROLE_KEY="YOUR-SERVICE-ROLE-KEY"
 
 This copies local SQLite `data/app.db` scans and feedback into Supabase.
 
-## 4. Deploy Consumer App For Other People
+## 4. Deploy SafeSandesh For Other People
 
 On Streamlit Community Cloud:
 
@@ -80,27 +80,12 @@ On Streamlit Community Cloud:
 SCAN_DB_BACKEND = "supabase"
 SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY = "YOUR-SERVICE-ROLE-KEY"
-```
-
-After deployment, Streamlit gives a public URL. Other people can open that URL from their own laptops.
-
-## 5. Deploy Technical App With Password Protection
-
-Create a second Streamlit app from the same GitHub repository:
-
-- Repository: this project repository.
-- Main file path: `apps/technical_app.py`.
-- App URL: use a separate name, for example `safesandesh-technical`.
-- Sharing: keep it private if your Streamlit plan allows it. If not, the app still has its own password-only gate.
-
-Add these secrets to the technical Streamlit app:
-
-```toml
-SCAN_DB_BACKEND = "supabase"
-SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
-SUPABASE_SERVICE_ROLE_KEY = "YOUR-SERVICE-ROLE-KEY"
 TECHNICAL_APP_PASSWORD = "CHOOSE-A-STRONG-PASSWORD"
 ```
+
+After deployment, Streamlit gives a public URL. Other people can open the public Home, Detector, and Dashboard pages from their own laptops. The Admin pages are password protected.
+
+## 5. Optional: Use A Hashed Admin Password
 
 For a cleaner submission, you can store a SHA-256 hash instead of the raw password:
 
@@ -118,11 +103,11 @@ Then use this secret instead:
 TECHNICAL_APP_PASSWORD_HASH = "PASTE-THE-SHA256-HASH-HERE"
 ```
 
-This is not a user login system. It is only one shared technical access password. The password is never committed to GitHub. It must be added only in Streamlit secrets or local environment variables.
+This is not a user login system. It is only one shared admin access password. The password is never committed to GitHub. It must be added only in Streamlit secrets or local environment variables.
 
-## 6. Run Technical App Locally
+## 6. Run The Full App Locally
 
-Run this locally when you want the private analyst view connected to the same Supabase scans:
+Run this locally when you want the public pages and password-protected Admin pages connected to the same Supabase scans:
 
 ```bash
 cd "/Users/ajneya/Desktop/ FYP Main/scam-webapp"
@@ -130,13 +115,13 @@ export SCAN_DB_BACKEND="supabase"
 export SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
 export SUPABASE_SERVICE_ROLE_KEY="YOUR-SERVICE-ROLE-KEY"
 export TECHNICAL_APP_PASSWORD="CHOOSE-A-STRONG-PASSWORD"
-./.venv/bin/streamlit run apps/technical_app.py --server.port 8503
+./.venv/bin/streamlit run apps/consumer_app.py --server.port 8502
 ```
 
 Open:
 
 ```text
-http://localhost:8503
+http://localhost:8502
 ```
 
 ## 7. FYP Submission Backup

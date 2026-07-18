@@ -28,6 +28,18 @@ pages = [
         icon=":material/monitoring:",
         url_path="Dashboard",
     ),
+    st.Page(
+        ROOT / "pages" / "2_🧪_Technical_Lab.py",
+        title="Admin",
+        icon=":material/admin_panel_settings:",
+        url_path="Admin",
+    ),
+    st.Page(
+        ROOT / "pages" / "3_🧠_AI_Studio.py",
+        title="AI Studio",
+        icon=":material/neurology:",
+        url_path="AI_Studio",
+    ),
 ]
 
 st.navigation(pages, position="hidden").run()

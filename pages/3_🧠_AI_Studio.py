@@ -17,6 +17,7 @@ except Exception:  # pragma: no cover - optional artifact reader
     joblib = None
 
 from src import model_runtime as runtime_utils
+from src.auth import require_technical_password
 from src.db import init_db, read_scans
 from src.explainability import cue_labels, detect_cue_tags, infer_message_language_name, language_code
 from src.ui_theme import apply_theme, top_menu
@@ -1248,6 +1249,7 @@ def _render_live_studio_fragment() -> None:
 
 
 st.set_page_config(page_title="AI Studio", layout="wide", initial_sidebar_state="collapsed")
+require_technical_password()
 init_db()
 apply_theme(home_particles=True)
 top_menu("ai_studio")

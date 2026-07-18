@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import html
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from textwrap import dedent
@@ -10,6 +11,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
+from src.auth import require_technical_password
 from src.db import init_db, read_scans
 from src.explainability import infer_message_language_name
 from src.ui_theme import apply_theme, top_menu
@@ -1782,9 +1784,11 @@ def _build_stat_trends(df: pd.DataFrame, period_key: str, lang_key: str) -> dict
 
 
 st.set_page_config(page_title="Technical Dashboard", layout="wide", initial_sidebar_state="collapsed")
+require_technical_password()
 init_db()
 apply_theme(home_particles=True)
-top_menu("dashboard")
+menu_key = "admin" if os.environ.get("SAFESANDESH_APP_SHELL", "").strip().lower() == "consumer" else "dashboard"
+top_menu(menu_key)
 
 terminal_time = datetime.now().strftime("%I:%M:%S %p").lower()
 st.markdown(
@@ -4315,7 +4319,7 @@ st.markdown(
         <span class='section-code'>// 01</span>
         <h1 class='page-h1'>Technical Dashboard</h1>
       </div>
-      <p class='page-sub'>Research-side analytics for model comparison, calibration, robustness testing, scan logs, and cross-language performance. AI Studio now has its own page in the technical app.</p>
+      <p class='page-sub'>Research-side analytics for model comparison, calibration, robustness testing, scan logs, and cross-language performance. AI Studio now has its own page in the password-protected Admin area.</p>
     </div>
     """
     ),
