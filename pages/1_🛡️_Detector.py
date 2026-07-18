@@ -481,7 +481,9 @@ def _highlight_message(text: str, cue_tags: list[str] | None = None) -> str:
         patterns.append((r"\b(job|loan|hiring|salary|नौकरी|लोन|ਨੌਕਰੀ|ਲੋਨ|نوکری|قرض)\b", "hl-warn"))
     for pat, cls in patterns:
         out = re.sub(pat, lambda m: f"<span class='{cls}'>{m.group(0)}</span>", out, flags=re.IGNORECASE)
-    return out
+    # Streamlit Markdown can treat indented HTML after raw blank lines as code.
+    # Keep multiline messages visually multiline without breaking the result card.
+    return out.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
 
 
 def _validate_message_for_analysis(message: str) -> str | None:
