@@ -7,6 +7,8 @@ import os
 
 import streamlit as st
 
+from src.ui_theme import apply_theme, top_menu
+
 
 def _secret_value(name: str) -> str:
     value = os.environ.get(name, "")
@@ -42,25 +44,39 @@ def _password_matches(candidate: str, mode: str, expected: str) -> bool:
     return hmac.compare_digest(candidate, expected)
 
 
+def _admin_menu_key() -> str:
+    shell = os.environ.get("SAFESANDESH_APP_SHELL", "combined").strip().lower()
+    return "admin" if shell == "consumer" else "dashboard"
+
+
+def _apply_password_gate_theme() -> None:
+    apply_theme(home_particles=True)
+    top_menu(_admin_menu_key())
+
+
 def _render_password_gate(message: str) -> None:
     safe_message = html.escape(message)
+    _apply_password_gate_theme()
     st.markdown(
         f"""
         <style>
-        .stApp {{
-          background:
-            radial-gradient(circle at 15% 10%, rgba(0, 255, 159, 0.14), transparent 30rem),
-            radial-gradient(circle at 85% 20%, rgba(0, 212, 255, 0.13), transparent 32rem),
-            #02080d;
-          color: #d9fff4;
+        .safesandesh-password-shell {{
+          max-width: 1180px;
+          margin: 4.5rem auto 0;
+          padding: 0 1rem;
         }}
         .safesandesh-password-gate {{
-          max-width: 680px;
-          margin: 12vh auto 0;
-          padding: 2rem;
-          border: 1px solid rgba(0, 212, 255, 0.55);
-          background: rgba(0, 14, 24, 0.86);
-          box-shadow: 0 0 28px rgba(0, 212, 255, 0.25);
+          max-width: 980px;
+          margin: 0 auto 1.25rem;
+          padding: clamp(1.6rem, 4vw, 2.5rem);
+          border: 1px solid rgba(0, 212, 255, 0.68);
+          background:
+            linear-gradient(135deg, rgba(0, 18, 30, 0.92), rgba(0, 8, 14, 0.94)),
+            radial-gradient(circle at 18% 15%, rgba(0, 255, 159, 0.10), transparent 26rem);
+          box-shadow:
+            0 0 34px rgba(0, 212, 255, 0.24),
+            inset 0 0 48px rgba(0, 255, 159, 0.045);
+          backdrop-filter: blur(8px);
         }}
         .safesandesh-password-kicker {{
           color: #00ff9f;
@@ -78,13 +94,28 @@ def _render_password_gate(message: str) -> None:
         .safesandesh-password-gate p {{
           color: rgba(217, 255, 244, 0.78);
           line-height: 1.6;
+          max-width: 760px;
+        }}
+        div[data-testid="stForm"] {{
+          max-width: 1180px;
+          margin: 0 auto;
+          border: 1px solid rgba(0, 212, 255, 0.30);
+          background: rgba(0, 8, 13, 0.72);
+          box-shadow: 0 0 18px rgba(0, 212, 255, 0.12);
+        }}
+        div[data-testid="stAlert"] {{
+          max-width: 1180px;
+          margin-left: auto;
+          margin-right: auto;
         }}
         </style>
-        <section class="safesandesh-password-gate">
-          <div class="safesandesh-password-kicker">SafeSandesh Admin</div>
-          <h1>Password Protected</h1>
-          <p>{safe_message}</p>
-        </section>
+        <div class="safesandesh-password-shell">
+          <section class="safesandesh-password-gate">
+            <div class="safesandesh-password-kicker">SafeSandesh Admin</div>
+            <h1>Password Protected</h1>
+            <p>{safe_message}</p>
+          </section>
+        </div>
         """,
         unsafe_allow_html=True,
     )
