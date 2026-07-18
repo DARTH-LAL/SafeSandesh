@@ -1,0 +1,13 @@
+streamlit
+pandas
+plotly
+scikit-learn
+joblib
+numpy
+scipy
+torch
+datasets
+transformers
+sentencepiece
+sacremoses
+certifi
