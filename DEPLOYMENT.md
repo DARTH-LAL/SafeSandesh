@@ -3,9 +3,9 @@
 This project should be deployed as one connected Streamlit app:
 
 - Public user pages: Home, Detector, and Consumer Dashboard.
-- Password-protected Admin pages: Technical Dashboard and AI Studio.
+- Password-protected Analyst Lab pages: Technical Dashboard and AI Studio.
 
-The Admin link is visible in the navbar, but the technical pages require the shared admin password before showing stored scan analytics, model comparisons, or AI Studio.
+The Analyst Lab link is visible in the navbar, but the technical pages require the shared analyst password before showing stored scan analytics, model comparisons, or AI Studio.
 
 ## 1. Create Supabase Tables
 
@@ -83,9 +83,9 @@ SUPABASE_SERVICE_ROLE_KEY = "YOUR-SERVICE-ROLE-KEY"
 TECHNICAL_APP_PASSWORD = "CHOOSE-A-STRONG-PASSWORD"
 ```
 
-After deployment, Streamlit gives a public URL. Other people can open the public Home, Detector, and Dashboard pages from their own laptops. The Admin pages are password protected.
+After deployment, Streamlit gives a public URL. Other people can open the public Home, Detector, and Dashboard pages from their own laptops. The Analyst Lab pages are password protected.
 
-## 5. Optional: Use A Hashed Admin Password
+## 5. Optional: Use A Hashed Analyst Password
 
 For a cleaner submission, you can store a SHA-256 hash instead of the raw password:
 
@@ -103,11 +103,11 @@ Then use this secret instead:
 TECHNICAL_APP_PASSWORD_HASH = "PASTE-THE-SHA256-HASH-HERE"
 ```
 
-This is not a user login system. It is only one shared admin access password. The password is never committed to GitHub. It must be added only in Streamlit secrets or local environment variables.
+This is not a user login system. It is only one shared analyst access password. The password is never committed to GitHub. It must be added only in Streamlit secrets or local environment variables.
 
 ## 6. Run The Full App Locally
 
-Run this locally when you want the public pages and password-protected Admin pages connected to the same Supabase scans:
+Run this locally when you want the public pages and password-protected Analyst Lab pages connected to the same Supabase scans:
 
 ```bash
 cd "/Users/ajneya/Desktop/ FYP Main/scam-webapp"

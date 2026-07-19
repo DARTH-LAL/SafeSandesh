@@ -44,14 +44,14 @@ def _password_matches(candidate: str, mode: str, expected: str) -> bool:
     return hmac.compare_digest(candidate, expected)
 
 
-def _admin_menu_key() -> str:
+def _protected_menu_key() -> str:
     shell = os.environ.get("SAFESANDESH_APP_SHELL", "combined").strip().lower()
-    return "admin" if shell == "consumer" else "dashboard"
+    return "analyst_lab" if shell == "consumer" else "dashboard"
 
 
 def _apply_password_gate_theme() -> None:
     apply_theme(home_particles=True)
-    top_menu(_admin_menu_key())
+    top_menu(_protected_menu_key())
 
 
 def _render_password_gate(message: str = "") -> None:
@@ -187,10 +187,10 @@ def _render_password_gate(message: str = "") -> None:
           <section class="safesandesh-password-gate">
             <div class="safesandesh-password-titlebar">
               <div class="safesandesh-password-lights"><span></span><span></span><span></span></div>
-              <div class="safesandesh-password-file">admin_access.py - locked</div>
+              <div class="safesandesh-password-file">analyst_lab.py - locked</div>
             </div>
             <div class="safesandesh-password-body">
-              <div class="safesandesh-password-kicker">SafeSandesh Admin</div>
+              <div class="safesandesh-password-kicker">SafeSandesh Analyst Lab</div>
               <h1>Password Protected</h1>
               {detail_html}
             </div>
@@ -208,7 +208,7 @@ def require_technical_password() -> None:
     mode, expected = _configured_password()
     if not expected:
         _render_password_gate(
-            "Admin access is disabled because no password is configured. "
+            "Analyst Lab access is disabled because no password is configured. "
             "Add TECHNICAL_APP_PASSWORD or TECHNICAL_APP_PASSWORD_HASH in Streamlit secrets."
         )
         st.stop()
@@ -219,7 +219,7 @@ def require_technical_password() -> None:
     _render_password_gate()
     with st.form("technical_password_form"):
         password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Open Admin Area")
+        submitted = st.form_submit_button("Open Analyst Lab")
 
     if submitted:
         if _password_matches(password, mode, expected):

@@ -1787,7 +1787,7 @@ st.set_page_config(page_title="Technical Dashboard", layout="wide", initial_side
 require_technical_password()
 init_db()
 apply_theme(home_particles=True)
-menu_key = "admin" if os.environ.get("SAFESANDESH_APP_SHELL", "").strip().lower() == "consumer" else "dashboard"
+menu_key = "analyst_lab" if os.environ.get("SAFESANDESH_APP_SHELL", "").strip().lower() == "consumer" else "dashboard"
 top_menu(menu_key)
 
 terminal_time = datetime.now().strftime("%I:%M:%S %p").lower()
@@ -4319,7 +4319,7 @@ st.markdown(
         <span class='section-code'>// 01</span>
         <h1 class='page-h1'>Technical Dashboard</h1>
       </div>
-      <p class='page-sub'>Research-side analytics for model comparison, calibration, robustness testing, scan logs, and cross-language performance. AI Studio now has its own page in the password-protected Admin area.</p>
+      <p class='page-sub'>Research-side analytics for model comparison, calibration, robustness testing, scan logs, and cross-language performance. AI Studio now has its own page in the password-protected Analyst Lab.</p>
     </div>
     """
     ),

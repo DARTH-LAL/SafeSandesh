@@ -30,9 +30,9 @@ pages = [
     ),
     st.Page(
         ROOT / "pages" / "2_🧪_Technical_Lab.py",
-        title="Admin",
-        icon=":material/admin_panel_settings:",
-        url_path="Admin",
+        title="Analyst Lab",
+        icon=":material/science:",
+        url_path="Analyst_Lab",
     ),
     st.Page(
         ROOT / "pages" / "3_🧠_AI_Studio.py",

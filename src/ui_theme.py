@@ -1810,9 +1810,9 @@ def top_menu(current: str = "home") -> None:
             ("Home", "/", "home"),
             ("Detector", "/Detector", "detector"),
             ("Dashboard", "/Dashboard", "dashboard"),
-            ("Admin", "/Admin", "admin"),
+            ("Analyst Lab", "/Analyst_Lab", "analyst_lab"),
         ]
-        if key in {"admin", "ai_studio"}:
+        if key in {"analyst_lab", "ai_studio"}:
             links.append(("AI Studio", "/AI_Studio", "ai_studio"))
     elif shell == "technical":
         links = [
@@ -1830,7 +1830,7 @@ def top_menu(current: str = "home") -> None:
 
     nav_links = []
     for label, href, id_key in links:
-        active_match = key == id_key or (id_key == "admin" and key == "technical_dashboard")
+        active_match = key == id_key or (id_key == "analyst_lab" and key == "technical_dashboard")
         active = " active" if active_match else ""
         safe_href = html.escape(href, quote=True)
         nav_links.append(
