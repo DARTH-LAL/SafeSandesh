@@ -61,9 +61,8 @@ def _render_password_gate(message: str = "") -> None:
         safe_message = html.escape(message)
         detail_html = f"<p class='safesandesh-password-detail'>{safe_message}</p>"
     _apply_password_gate_theme()
-    st.markdown(
-        textwrap.dedent(
-            f"""
+    gate_html = textwrap.dedent(
+        f"""
         <style>
         .safesandesh-password-shell {{
           max-width: 1180px;
@@ -198,10 +197,10 @@ def _render_password_gate(message: str = "") -> None:
             </div>
           </section>
         </div>
-        """,
-        ).strip(),
-        unsafe_allow_html=True,
-    )
+        """
+    ).strip()
+    # st.html avoids Markdown treating empty HTML lines as visible code blocks.
+    st.html(gate_html)
 
 
 def require_technical_password() -> None:
