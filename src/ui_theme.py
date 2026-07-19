@@ -1811,9 +1811,8 @@ def top_menu(current: str = "home") -> None:
             ("Detector", "/Detector", "detector"),
             ("Dashboard", "/Dashboard", "dashboard"),
             ("Analyst Lab", "/Analyst_Lab", "analyst_lab"),
+            ("AI Studio", "/AI_Studio", "ai_studio"),
         ]
-        if key in {"analyst_lab", "ai_studio"}:
-            links.append(("AI Studio", "/AI_Studio", "ai_studio"))
     elif shell == "technical":
         links = [
             ("Dashboard", "/", "dashboard"),

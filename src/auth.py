@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import html
 import os
+import textwrap
 
 import streamlit as st
 
@@ -61,7 +62,8 @@ def _render_password_gate(message: str = "") -> None:
         detail_html = f"<p class='safesandesh-password-detail'>{safe_message}</p>"
     _apply_password_gate_theme()
     st.markdown(
-        f"""
+        textwrap.dedent(
+            f"""
         <style>
         .safesandesh-password-shell {{
           max-width: 1180px;
@@ -197,6 +199,7 @@ def _render_password_gate(message: str = "") -> None:
           </section>
         </div>
         """,
+        ).strip(),
         unsafe_allow_html=True,
     )
 
