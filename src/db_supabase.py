@@ -66,24 +66,6 @@ SCAN_STORAGE_COLUMNS = [
     *SCAN_COLUMNS[2:],
 ]
 
-FEEDBACK_COLUMNS = [
-    "id",
-    "ts",
-    "language",
-    "pred_label",
-    "pred_scam_type",
-    "pred_risk_score",
-    "pred_confidence",
-    "model_source",
-    "model_version",
-    "feedback_type",
-    "expected_label",
-    "expected_scam_type",
-    "feedback_note",
-    "message",
-]
-
-
 def _secret_value(name: str, default: str = "") -> str:
     value = os.getenv(name)
     if value:
@@ -234,21 +216,6 @@ def _clean_scan_record(record: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _clean_feedback_record(record: dict[str, Any]) -> dict[str, Any]:
-    out = {column: record.get(column) for column in FEEDBACK_COLUMNS if column in record}
-    out.setdefault("ts", datetime.utcnow().isoformat())
-    out.setdefault("language", "English")
-    out.setdefault("message", "")
-    out.setdefault("pred_label", "unknown")
-    out.setdefault("pred_scam_type", "Other")
-    out["pred_risk_score"] = int(out.get("pred_risk_score") or 0)
-    out["pred_confidence"] = float(out.get("pred_confidence") or 0.0)
-    out.setdefault("model_source", "unknown")
-    out.setdefault("model_version", "unknown")
-    out.setdefault("feedback_type", "wrong_prediction")
-    return out
-
-
 def init_db() -> None:
     _config()
 
@@ -326,61 +293,6 @@ def read_scans(limit=5000):
     return [_row_tuple(row, SCAN_COLUMNS) for row in rows]
 
 
-def insert_feedback(
-    language,
-    message,
-    pred_label,
-    pred_scam_type,
-    pred_risk_score,
-    pred_confidence,
-    model_source,
-    model_version,
-    feedback_type="wrong_prediction",
-    expected_label=None,
-    expected_scam_type=None,
-    feedback_note=None,
-):
-    record = _clean_feedback_record(
-        {
-            "language": language,
-            "message": message,
-            "pred_label": pred_label,
-            "pred_scam_type": pred_scam_type,
-            "pred_risk_score": pred_risk_score,
-            "pred_confidence": pred_confidence,
-            "model_source": model_source,
-            "model_version": model_version,
-            "feedback_type": feedback_type,
-            "expected_label": expected_label,
-            "expected_scam_type": expected_scam_type,
-            "feedback_note": feedback_note,
-        }
-    )
-    rows = _request("POST", "feedback", record)
-    if isinstance(rows, list) and rows:
-        return rows[0].get("id")
-    return None
-
-
-def read_feedback(limit=2000):
-    rows = _select("feedback", FEEDBACK_COLUMNS, limit=limit)
-    return [_row_tuple(row, FEEDBACK_COLUMNS) for row in rows]
-
-
-def read_feedback_summary():
-    rows = _select("feedback", ["id", "feedback_type", "model_version"], limit=10000)
-    wrong = sum(1 for row in rows if row.get("feedback_type") == "wrong_prediction")
-    by_model_version: dict[str, int] = {}
-    for row in rows:
-        version = str(row.get("model_version") or "unknown")
-        by_model_version[version] = by_model_version.get(version, 0) + 1
-    return {
-        "total_feedback": len(rows),
-        "wrong_prediction": wrong,
-        "by_model_version": by_model_version,
-    }
-
-
 def upsert_scan_records(records: list[dict[str, Any]], batch_size: int = 200) -> int:
     total = 0
     for start in range(0, len(records), batch_size):
@@ -388,20 +300,6 @@ def upsert_scan_records(records: list[dict[str, Any]], batch_size: int = 200) ->
         _request(
             "POST",
             "scans?on_conflict=id",
-            batch,
-            prefer="resolution=merge-duplicates,return=minimal",
-        )
-        total += len(batch)
-    return total
-
-
-def upsert_feedback_records(records: list[dict[str, Any]], batch_size: int = 200) -> int:
-    total = 0
-    for start in range(0, len(records), batch_size):
-        batch = [_clean_feedback_record(record) for record in records[start : start + batch_size]]
-        _request(
-            "POST",
-            "feedback?on_conflict=id",
             batch,
             prefer="resolution=merge-duplicates,return=minimal",
         )

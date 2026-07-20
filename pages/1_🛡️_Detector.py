@@ -4388,7 +4388,7 @@ st.markdown(
       letter-spacing: 0.04em;
     }
 
-    .det-feedback-strip {
+    .det-action-strip {
       padding: 14px 24px;
       border-top: 1px solid var(--border);
       background: rgba(0,0,0,0.2);
@@ -4798,7 +4798,7 @@ with right:
                 st.session_state.get("last_language", lang_name),
             )
 
-        st.markdown("<div class='det-feedback-strip'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='det-action-strip'></div>", unsafe_allow_html=True)
         has_result = "last_result" in st.session_state
         report_text = ""
         report_pdf = b""

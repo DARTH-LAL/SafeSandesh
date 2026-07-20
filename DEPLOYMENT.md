@@ -19,7 +19,7 @@ The Analyst Lab link is visible in the navbar, but the technical pages require t
 
 Use the contents of `scripts/supabase_schema.sql`.
 
-The schema stores full scan messages, timestamps, verdicts, language, scam type, model outputs, and feedback.
+The schema stores full scan messages, timestamps, verdicts, language, scam type, and model outputs.
 
 If the Supabase project was created before readable scan date/time columns were added, also run:
 
@@ -65,7 +65,7 @@ export SUPABASE_SERVICE_ROLE_KEY="YOUR-SERVICE-ROLE-KEY"
 ./.venv/bin/python scripts/migrate_sqlite_to_supabase.py
 ```
 
-This copies local SQLite `data/app.db` scans and feedback into Supabase.
+This copies local SQLite `data/app.db` scans into Supabase.
 
 ## 4. Deploy SafeSandesh For Other People
 
@@ -126,10 +126,9 @@ http://localhost:8502
 
 ## 7. FYP Submission Backup
 
-For submission, export the Supabase tables as CSV files from Supabase Table Editor or SQL editor. Keep these exports with the project:
+For submission, export the Supabase scan table as a CSV file from Supabase Table Editor or SQL editor. Keep this export with the project:
 
 - `scans.csv`
-- `feedback.csv`
 
 That gives you a portable backup of the deployed database.
 

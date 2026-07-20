@@ -32,13 +32,9 @@ set search_path = public
 as $$
 declare
     scan_max bigint;
-    feedback_max bigint;
 begin
     select coalesce(max(id), 0) into scan_max from public.scans;
     perform setval(pg_get_serial_sequence('public.scans', 'id'), greatest(scan_max, 1), scan_max > 0);
-
-    select coalesce(max(id), 0) into feedback_max from public.feedback;
-    perform setval(pg_get_serial_sequence('public.feedback', 'id'), greatest(feedback_max, 1), feedback_max > 0);
 end;
 $$;
 

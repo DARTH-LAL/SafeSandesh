@@ -9,7 +9,7 @@ from textwrap import dedent
 import pandas as pd
 import streamlit as st
 
-from src.db import init_db, read_feedback_summary, read_scans
+from src.db import init_db, read_scans
 from src.ui_theme import apply_theme, top_menu
 
 
@@ -195,14 +195,13 @@ def _period_window(period_key: str) -> tuple[pd.Timedelta, str]:
 
 def _snapshot(df: pd.DataFrame) -> dict[str, float]:
     if df.empty:
-        return {"total": 0, "phishing": 0, "suspicious": 0, "safe": 0, "feedback": 0}
+        return {"total": 0, "phishing": 0, "suspicious": 0, "safe": 0}
     counts = df["label_norm"].value_counts()
     return {
         "total": float(len(df)),
         "phishing": float(counts.get("phishing", 0)),
         "suspicious": float(counts.get("suspicious", 0)),
         "safe": float(counts.get("safe", 0)),
-        "feedback": 0,
     }
 
 
@@ -219,11 +218,11 @@ def _trend(curr: float, prev: float, context: str) -> dict[str, str]:
     return {"cls": "flat", "arrow": "→", "value": "+0.0%", "context": context}
 
 
-def _build_stat_trends(df: pd.DataFrame, period_key: str, lang_key: str, feedback_total: int) -> dict[str, dict[str, str]]:
+def _build_stat_trends(df: pd.DataFrame, period_key: str, lang_key: str) -> dict[str, dict[str, str]]:
     delta, context = _period_window(period_key)
     empty = {"cls": "flat", "arrow": "→", "value": "+0.0%", "context": context}
     if df.empty:
-        return {key: dict(empty) for key in ["total", "phishing", "suspicious", "safe", "feedback"]}
+        return {key: dict(empty) for key in ["total", "phishing", "suspicious", "safe"]}
 
     base = df.copy()
     if lang_key != "all":
@@ -235,14 +234,7 @@ def _build_stat_trends(df: pd.DataFrame, period_key: str, lang_key: str, feedbac
     curr = _snapshot(current)
     prev = _snapshot(previous)
 
-    trends = {key: _trend(curr[key], prev[key], context) for key in ["total", "phishing", "suspicious", "safe"]}
-    trends["feedback"] = {
-        "cls": "up" if feedback_total else "flat",
-        "arrow": "↑" if feedback_total else "→",
-        "value": f"{feedback_total:,}",
-        "context": "total feedback",
-    }
-    return trends
+    return {key: _trend(curr[key], prev[key], context) for key in ["total", "phishing", "suspicious", "safe"]}
 
 
 def _timeline_from_df(df: pd.DataFrame) -> dict[str, list]:
@@ -416,8 +408,6 @@ def _download_frame(
     phishing_count: int,
     suspicious_count: int,
     safe_count: int,
-    feedback_total: int,
-    feedback_wrong: int,
     verdict_items: list[tuple[str, int]],
     language_items: list[tuple[str, int]],
     scam_items: list[tuple[str, int]],
@@ -430,8 +420,6 @@ def _download_frame(
         {"section": "summary", "metric": "phishing_detected", "value": phishing_count},
         {"section": "summary", "metric": "suspicious", "value": suspicious_count},
         {"section": "summary", "metric": "safe_messages", "value": safe_count},
-        {"section": "summary", "metric": "feedback_received", "value": feedback_total},
-        {"section": "summary", "metric": "wrong_prediction_feedback", "value": feedback_wrong},
     ]
     rows.extend({"section": "verdict_breakdown", "metric": name, "value": count} for name, count in verdict_items)
     rows.extend({"section": "language_distribution", "metric": name, "value": count} for name, count in language_items)
@@ -471,9 +459,6 @@ lang_selected = _sanitize_language(_query_param_value("lang", "all"))
 rows = read_scans(limit=6000)
 df_all = _as_df(rows)
 df = _apply_filters(df_all, period_selected, lang_selected)
-feedback_summary = read_feedback_summary()
-feedback_total = int(feedback_summary.get("total_feedback", 0) or 0)
-feedback_wrong = int(feedback_summary.get("wrong_prediction", 0) or 0)
 
 counts = df["label_norm"].value_counts() if not df.empty else pd.Series(dtype=int)
 total_scans = int(len(df))
@@ -482,7 +467,7 @@ suspicious_count = int(counts.get("suspicious", 0))
 safe_count = int(counts.get("safe", 0))
 language_count = int(df["language_name"].nunique()) if not df.empty else 0
 
-stat_trends = _build_stat_trends(df_all, period_selected, lang_selected, feedback_total)
+stat_trends = _build_stat_trends(df_all, period_selected, lang_selected)
 timeline = _timeline_from_df(df)
 verdict_items = [("phishing", phishing_count), ("suspicious", suspicious_count), ("safe", safe_count)]
 language_items = _count_items(df, "language_name")
@@ -513,8 +498,6 @@ export_df = _download_frame(
     phishing_count=phishing_count,
     suspicious_count=suspicious_count,
     safe_count=safe_count,
-    feedback_total=feedback_total,
-    feedback_wrong=feedback_wrong,
     verdict_items=verdict_items,
     language_items=language_items,
     scam_items=scam_items,
@@ -597,7 +580,7 @@ st.markdown(
           margin-bottom:0.38rem;
           font-weight:900;
         }
-        .stat-grid { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:1.18rem; margin-bottom:1.95rem; }
+        .stat-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:1.18rem; margin-bottom:1.95rem; }
         .stat-card {
           background:rgba(2,12,22,0.96);
           border:1px solid var(--consumer-border);
@@ -627,7 +610,6 @@ st.markdown(
         .stat-card.red { --stat-glow:var(--consumer-red); border-color:rgba(255,56,96,0.72); box-shadow:0 0 0 1px rgba(255,56,96,0.24),0 0 14px rgba(255,56,96,0.48),0 0 30px rgba(255,56,96,0.18),inset 0 0 0 1px rgba(255,56,96,0.10); }
         .stat-card.yellow { --stat-glow:var(--consumer-yellow); border-color:rgba(255,221,87,0.72); box-shadow:0 0 0 1px rgba(255,221,87,0.24),0 0 14px rgba(255,221,87,0.48),0 0 30px rgba(255,221,87,0.18),inset 0 0 0 1px rgba(255,221,87,0.10); }
         .stat-card.green { --stat-glow:var(--consumer-green); border-color:rgba(0,255,159,0.72); box-shadow:0 0 0 1px rgba(0,255,159,0.24),0 0 14px rgba(0,255,159,0.48),0 0 30px rgba(0,255,159,0.18),inset 0 0 0 1px rgba(0,255,159,0.10); }
-        .stat-card.purple { --stat-glow:var(--consumer-purple); border-color:rgba(181,122,255,0.74); box-shadow:0 0 0 1px rgba(181,122,255,0.24),0 0 14px rgba(181,122,255,0.48),0 0 30px rgba(181,122,255,0.18),inset 0 0 0 1px rgba(181,122,255,0.10); }
         .stat-label {
           font-family:'Share Tech Mono', monospace;
           font-size:0.68rem;
@@ -646,7 +628,6 @@ st.markdown(
         .stat-val.red { color:var(--consumer-red); text-shadow:0 0 12px rgba(255,56,96,0.42); }
         .stat-val.yellow { color:var(--consumer-yellow); text-shadow:0 0 12px rgba(255,221,87,0.36); }
         .stat-val.green { color:var(--consumer-green); text-shadow:0 0 12px rgba(0,255,159,0.38); }
-        .stat-val.purple { color:var(--consumer-purple); text-shadow:0 0 12px rgba(181,122,255,0.38); }
         .stat-trend {
           display:flex;
           align-items:center;
@@ -842,7 +823,7 @@ st.markdown(
             <span class='section-code'>// 02</span>
             <h1 class='page-h1'>Consumer Dashboard</h1>
           </div>
-          <p class='page-sub'>Privacy-safe user analytics for scan volume, language coverage, scam categories, verdict counts, and feedback volume. Individual messages and model comparisons stay in the private analyst app.</p>
+          <p class='page-sub'>Privacy-safe user analytics for scan volume, language coverage, scam categories, verdict counts, and recent activity. Individual messages and model comparisons stay in the private analyst app.</p>
         </div>
         """
     ),
@@ -908,11 +889,6 @@ st.markdown(
               <div class='stat-label'>Safe Messages</div>
               <div class='stat-val green'>{safe_count:,}</div>
               <div class='stat-trend {stat_trends['safe']['cls']}'><span class='trend-arrow'>{stat_trends['safe']['arrow']}</span><span class='trend-value'>{stat_trends['safe']['value']}</span><span class='trend-context'>{html.escape(stat_trends['safe']['context'])}</span></div>
-            </div>
-            <div class='stat-card purple'>
-              <div class='stat-label'>Feedback Received</div>
-              <div class='stat-val purple'>{feedback_total:,}</div>
-              <div class='stat-trend {stat_trends['feedback']['cls']}'><span class='trend-arrow'>{stat_trends['feedback']['arrow']}</span><span class='trend-value'>{stat_trends['feedback']['value']}</span><span class='trend-context'>{html.escape(stat_trends['feedback']['context'])}</span></div>
             </div>
           </div>
 

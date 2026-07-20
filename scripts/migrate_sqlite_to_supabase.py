@@ -48,7 +48,7 @@ def _read_table(conn: sqlite3.Connection, table_name: str, columns: list[str]) -
     return [{column: row[column] for column in selected} for row in rows]
 
 
-def _load_sqlite_records(sqlite_path: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _load_sqlite_records(sqlite_path: Path) -> list[dict[str, Any]]:
     if not sqlite_path.exists():
         raise FileNotFoundError(f"Local SQLite database not found: {sqlite_path}")
 
@@ -56,15 +56,14 @@ def _load_sqlite_records(sqlite_path: Path) -> tuple[list[dict[str, Any]], list[
     conn.row_factory = sqlite3.Row
     try:
         scans = _read_table(conn, "scans", db_supabase.SCAN_STORAGE_COLUMNS)
-        feedback = _read_table(conn, "feedback", db_supabase.FEEDBACK_COLUMNS)
     finally:
         conn.close()
-    return scans, feedback
+    return scans
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Copy local SQLite scan history and feedback into Supabase."
+        description="Copy local SQLite scan history into Supabase."
     )
     parser.add_argument(
         "--sqlite-path",
@@ -90,9 +89,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    scans, feedback = _load_sqlite_records(args.sqlite_path)
+    scans = _load_sqlite_records(args.sqlite_path)
     print(f"SQLite source: {args.sqlite_path}")
-    print(f"Found {len(scans)} scan rows and {len(feedback)} feedback rows.")
+    print(f"Found {len(scans)} scan rows.")
 
     if args.dry_run:
         print("Dry run only. No Supabase writes were made.")
@@ -103,12 +102,6 @@ def main() -> int:
         print(f"Migrated {migrated} scan rows to Supabase.")
     else:
         print("No scan rows to migrate.")
-
-    if feedback:
-        migrated = db_supabase.upsert_feedback_records(feedback, batch_size=args.batch_size)
-        print(f"Migrated {migrated} feedback rows to Supabase.")
-    else:
-        print("No feedback rows to migrate.")
 
     if not args.skip_sequence_reset:
         try:

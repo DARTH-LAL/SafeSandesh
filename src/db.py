@@ -155,26 +155,6 @@ def init_db():
         _ensure_scan_columns(conn)
         _backfill_scan_datetime_columns(conn)
 
-        conn.execute(
-            """
-        CREATE TABLE IF NOT EXISTS feedback (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ts TEXT NOT NULL,
-            language TEXT NOT NULL,
-            message TEXT NOT NULL,
-            pred_label TEXT NOT NULL,
-            pred_scam_type TEXT NOT NULL,
-            pred_risk_score INTEGER NOT NULL,
-            pred_confidence REAL NOT NULL DEFAULT 0.0,
-            model_source TEXT NOT NULL DEFAULT 'unknown',
-            model_version TEXT NOT NULL DEFAULT 'unknown',
-            feedback_type TEXT NOT NULL,
-            expected_label TEXT,
-            expected_scam_type TEXT,
-            feedback_note TEXT
-        )
-        """
-        )
         conn.commit()
 
 
@@ -294,90 +274,6 @@ def read_scans(limit=5000):
     return rows
 
 
-def insert_feedback(
-    language,
-    message,
-    pred_label,
-    pred_scam_type,
-    pred_risk_score,
-    pred_confidence,
-    model_source,
-    model_version,
-    feedback_type="wrong_prediction",
-    expected_label=None,
-    expected_scam_type=None,
-    feedback_note=None,
-):
-    with get_conn() as conn:
-        cur = conn.execute(
-            """
-        INSERT INTO feedback (
-            ts, language, message,
-            pred_label, pred_scam_type, pred_risk_score, pred_confidence,
-            model_source, model_version,
-            feedback_type, expected_label, expected_scam_type, feedback_note
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                datetime.utcnow().isoformat(),
-                language,
-                message,
-                pred_label,
-                pred_scam_type,
-                int(pred_risk_score),
-                float(pred_confidence or 0.0),
-                str(model_source),
-                str(model_version),
-                str(feedback_type),
-                expected_label,
-                expected_scam_type,
-                feedback_note,
-            ),
-        )
-        conn.commit()
-        return cur.lastrowid
-
-
-def read_feedback(limit=2000):
-    with get_conn() as conn:
-        cur = conn.execute(
-            """
-        SELECT
-            id, ts, language, pred_label, pred_scam_type, pred_risk_score,
-            pred_confidence, model_source, model_version,
-            feedback_type, expected_label, expected_scam_type, feedback_note, message
-        FROM feedback
-        ORDER BY ts DESC
-        LIMIT ?
-        """,
-            (limit,),
-        )
-        rows = cur.fetchall()
-    return rows
-
-
-def read_feedback_summary():
-    with get_conn() as conn:
-        total = conn.execute("SELECT COUNT(*) FROM feedback").fetchone()[0]
-        wrong = conn.execute("SELECT COUNT(*) FROM feedback WHERE feedback_type='wrong_prediction'").fetchone()[0]
-
-        rows = conn.execute(
-            """
-        SELECT model_version, COUNT(*)
-        FROM feedback
-        GROUP BY model_version
-        ORDER BY COUNT(*) DESC
-        """
-        ).fetchall()
-
-    return {
-        "total_feedback": int(total),
-        "wrong_prediction": int(wrong),
-        "by_model_version": {str(v): int(c) for v, c in rows},
-    }
-
-
 def _backend_name():
     value = os.getenv("SCAN_DB_BACKEND", "")
     if not value:
@@ -399,9 +295,6 @@ def _supabase_backend():
 _sqlite_init_db = init_db
 _sqlite_insert_scan = insert_scan
 _sqlite_read_scans = read_scans
-_sqlite_insert_feedback = insert_feedback
-_sqlite_read_feedback = read_feedback
-_sqlite_read_feedback_summary = read_feedback_summary
 
 
 def init_db():
@@ -420,21 +313,3 @@ def read_scans(limit=5000):
     if _backend_name() == "supabase":
         return _supabase_backend().read_scans(limit=limit)
     return _sqlite_read_scans(limit=limit)
-
-
-def insert_feedback(*args, **kwargs):
-    if _backend_name() == "supabase":
-        return _supabase_backend().insert_feedback(*args, **kwargs)
-    return _sqlite_insert_feedback(*args, **kwargs)
-
-
-def read_feedback(limit=2000):
-    if _backend_name() == "supabase":
-        return _supabase_backend().read_feedback(limit=limit)
-    return _sqlite_read_feedback(limit=limit)
-
-
-def read_feedback_summary():
-    if _backend_name() == "supabase":
-        return _supabase_backend().read_feedback_summary()
-    return _sqlite_read_feedback_summary()
