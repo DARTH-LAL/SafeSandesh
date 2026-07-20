@@ -75,6 +75,7 @@ def _decision_label_display(value: object | None, review_recommended: bool = Fal
 
 
 LANGUAGE_SPECS = [("en", "English"), ("hi", "Hindi"), ("pa", "Punjabi"), ("ur", "Urdu")]
+EVAL_CLASS_ORDER = ["Safe", "Suspicious", "Phishing"]
 
 
 def _metric_accuracy(metrics: dict | None) -> float | None:
@@ -226,6 +227,56 @@ def _metric_temperature(metrics: dict | None) -> float | None:
         return None
 
 
+def _metric_model_version(metrics: dict | None, fallback: str) -> str:
+    if not metrics:
+        return fallback
+    return str(metrics.get("model_version") or metrics.get("model_source") or fallback)
+
+
+def _canonical_eval_label(value: object) -> str:
+    text = str(value or "").strip().lower()
+    if "phish" in text:
+        return "Phishing"
+    if "susp" in text or "spam" in text:
+        return "Suspicious"
+    return "Safe"
+
+
+def _metric_test_confusion_matrix(metrics: dict | None) -> list[list[int]] | None:
+    if not metrics:
+        return None
+
+    test_metrics = metrics.get("risk_metrics", {}).get("test", {})
+    raw_matrix = test_metrics.get("confusion_matrix")
+    raw_labels = test_metrics.get("labels") or metrics.get("risk_classes")
+    if not raw_matrix or not raw_labels:
+        return None
+
+    label_index = {_canonical_eval_label(label): idx for idx, label in enumerate(raw_labels)}
+    ordered_matrix: list[list[int]] = []
+    for actual_label in EVAL_CLASS_ORDER:
+        actual_idx = label_index.get(actual_label)
+        ordered_row: list[int] = []
+        for predicted_label in EVAL_CLASS_ORDER:
+            predicted_idx = label_index.get(predicted_label)
+            try:
+                ordered_row.append(int(raw_matrix[actual_idx][predicted_idx]))  # type: ignore[index]
+            except Exception:
+                ordered_row.append(0)
+        ordered_matrix.append(ordered_row)
+    return ordered_matrix
+
+
+def _ece_status(ece: float | None) -> tuple[str, str]:
+    if ece is None:
+        return "ECE unavailable", "muted"
+    if ece <= 0.02:
+        return "Well calibrated", "good"
+    if ece <= 0.05:
+        return "Acceptable", "warn"
+    return "Needs attention", "risk"
+
+
 def _select_model_specs() -> list[tuple[str, dict | None]]:
     indicbert = _load_json(MODEL_DIR / "indicbert_metrics.json")
     bilstm = _load_json(MODEL_DIR / "bilstm_metrics.json")
@@ -309,8 +360,8 @@ def _build_insights(primary_label: str, primary_metrics: dict | None, secondary_
             "English still carries the strongest signal, while Hindi, Punjabi, and Urdu are covered in the live dataset.",
         ),
         (
-            "Robustness Win",
-            "Augmented scans still help recover the hardest noisy examples like spacing, spelling, and emoji evasion.",
+            "Reliability Evidence",
+            "Each deployed detector has saved test-set calibration evidence, so score reliability can be checked model by model.",
         ),
         (
             "Hardest Scam Type",
@@ -340,15 +391,6 @@ PERF_DATA = _build_perf_data(MODEL_SPECS) or [
     ("Phishing", PRIMARY_MODEL_LABEL, 0.958, 0.962, 0.960),
     ("Phishing", SECONDARY_MODEL_LABEL, 0.879, 0.851, 0.865),
     ("Phishing", TERTIARY_MODEL_LABEL, 0.821, 0.802, 0.811),
-]
-
-ROBUST_DATA = [
-    ("Emoji Insertion", 0.847, 0.921, "+7.4pp"),
-    ("Spelling Variants", 0.831, 0.903, "+7.2pp"),
-    ("Spacing / Punct Noise", 0.862, 0.934, "+7.2pp"),
-    ("Mixed Evasion", 0.809, 0.887, "+7.8pp"),
-    ("Transliteration", 0.791, 0.874, "+8.3pp"),
-    ("Character Swap", 0.818, 0.896, "+7.8pp"),
 ]
 
 INSIGHTS = _build_insights(
@@ -666,52 +708,6 @@ def _build_timeline_svg(labels: list[str], pvals: list[int], svals: list[int], s
   {dots(pvals, 'tl-dot-red')}
   {dots(svals, 'tl-dot-yellow')}
   {dots(safevals, 'tl-dot-green')}
-  {''.join(xlabels)}
-</svg>
-"""
-    )
-        .strip()
-        .replace("\n", "")
-    )
-
-
-def _build_calibration_svg() -> str:
-    bins = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    before = [0.06, 0.14, 0.21, 0.29, 0.44, 0.58, 0.69, 0.82, 0.88, 0.94]
-    after = [0.10, 0.20, 0.31, 0.40, 0.51, 0.61, 0.71, 0.81, 0.91, 0.99]
-
-    width, height = 560, 210
-    pad_l, pad_r, pad_t, pad_b = 36, 12, 16, 30
-    cw, ch = width - pad_l - pad_r, height - pad_t - pad_b
-
-    def points(vals: list[float]) -> str:
-        n = max(len(vals) - 1, 1)
-        pts = []
-        for i, v in enumerate(vals):
-            x = pad_l + (i / n) * cw
-            y = pad_t + ch - v * ch
-            pts.append(f"{x:.2f},{y:.2f}")
-        return " ".join(pts)
-
-    ygrid = []
-    for i in [0, 0.25, 0.5, 0.75, 1.0]:
-        y = pad_t + ch - i * ch
-        ygrid.append(f"<line x1='{pad_l}' y1='{y:.2f}' x2='{pad_l+cw}' y2='{y:.2f}' class='tl-grid' />")
-
-    xlabels = []
-    for i, b in enumerate(bins):
-        x = pad_l + (i / max(len(bins) - 1, 1)) * cw
-        xlabels.append(f"<text x='{x:.2f}' y='{height - 8}' class='tl-label' text-anchor='middle'>{b:.1f}</text>")
-
-    perfect = points(bins)
-    return (
-        dedent(
-        f"""
-<svg class='dash-svg' viewBox='0 0 {width} {height}' preserveAspectRatio='none' role='img' aria-label='calibration chart'>
-  {''.join(ygrid)}
-  <polyline points='{perfect}' class='calib-perfect' />
-  <polyline points='{points(before)}' class='calib-before' />
-  <polyline points='{points(after)}' class='calib-after' />
   {''.join(xlabels)}
 </svg>
 """
@@ -1589,9 +1585,12 @@ def _build_confusion_matrix(safe_count: int, suspicious_count: int, phishing_cou
     return [safe_row, suspicious_row, phishing_row]
 
 
-def _build_confusion_matrix_html(cm_data: list[list[int]], title: str = "Current Model · Overall") -> str:
+def _build_confusion_matrix_html(
+    cm_data: list[list[int]],
+    title: str = "Current Model · Overall",
+    cell_size: int = 62,
+) -> str:
     labels = ["Safe", "Susp.", "Phish."]
-    cell_size = 62
     all_vals = [v for row in cm_data for v in row]
     max_val = max(all_vals) if all_vals else 1
     max_val = max(max_val, 1)
@@ -1650,6 +1649,80 @@ def _build_confusion_matrix_html(cm_data: list[list[int]], title: str = "Current
         </div>
         """
     )
+
+
+def _build_model_confusion_cards(model_specs: list[tuple[str, dict | None]]) -> str:
+    cards: list[str] = []
+    for label, metrics in model_specs[:3]:
+        matrix = _metric_test_confusion_matrix(metrics)
+        if matrix is None:
+            matrix = _build_confusion_matrix(safe_count=0, suspicious_count=0, phishing_count=0)
+        version = _metric_model_version(metrics, label)
+        accuracy = _metric_accuracy(metrics)
+        macro_f1 = _metric_macro_f1(metrics)
+        accuracy_text = f"{accuracy:.3f}" if accuracy is not None else "n/a"
+        macro_text = f"{macro_f1:.3f}" if macro_f1 is not None else "n/a"
+        support = sum(sum(row) for row in matrix)
+        cards.append(
+            f"""
+            <article class='model-eval-card'>
+              <div class='model-eval-head'>
+                <div>
+                  <div class='model-eval-role'>{html.escape(label)} model</div>
+                  <div class='model-eval-name'>{html.escape(version)}</div>
+                </div>
+                <span class='model-eval-split'>test set</span>
+              </div>
+              {_build_confusion_matrix_html(matrix, title=f"{label} · Overall", cell_size=42)}
+              <div class='model-eval-metrics'>
+                <span>Accuracy {html.escape(accuracy_text)}</span>
+                <span>Macro-F1 {html.escape(macro_text)}</span>
+                <span>{support:,} rows</span>
+              </div>
+            </article>
+            """
+        )
+
+    if not cards:
+        return "<div class='empty-note'>No saved confusion-matrix artifacts found.</div>"
+    return f"<div class='model-eval-grid'>{''.join(cards)}</div>"
+
+
+def _build_model_calibration_cards(model_specs: list[tuple[str, dict | None]]) -> str:
+    cards: list[str] = []
+    for label, metrics in model_specs[:3]:
+        version = _metric_model_version(metrics, label)
+        val_before = _metric_calibration_ece(metrics, "val", "before_temperature")
+        val_after = _metric_calibration_ece(metrics, "val", "after_temperature")
+        test_ece = _metric_ece(metrics)
+        temperature = _metric_temperature(metrics)
+        status, status_class = _ece_status(test_ece)
+
+        before_text = f"{val_before:.3f}" if val_before is not None else "n/a"
+        after_text = f"{val_after:.3f}" if val_after is not None else "n/a"
+        test_text = f"{test_ece:.3f}" if test_ece is not None else "n/a"
+        temp_text = f"{temperature:.3f}" if temperature is not None else "n/a"
+
+        cards.append(
+            f"""
+            <article class='model-calib-card {status_class}'>
+              <div class='model-calib-top'>
+                <div>
+                  <div class='model-calib-label'>{html.escape(label)}</div>
+                  <div class='model-calib-version'>{html.escape(version)}</div>
+                </div>
+                <span class='ece-badge {status_class}'>{html.escape(status)}</span>
+              </div>
+              <div class='model-calib-score'>Test ECE <strong>{html.escape(test_text)}</strong></div>
+              <div class='model-calib-row'><span>Validation ECE</span><strong>{html.escape(before_text)} → {html.escape(after_text)}</strong></div>
+              <div class='model-calib-row'><span>Temperature</span><strong>{html.escape(temp_text)}</strong></div>
+            </article>
+            """
+        )
+
+    if not cards:
+        return "<div class='empty-note'>No saved calibration artifacts found.</div>"
+    return f"<div class='model-calib-grid'>{''.join(cards)}</div>"
 
 
 def _query_param_value(name: str, default: str) -> str:
@@ -2019,6 +2092,26 @@ components.html(
 
             if (panelId === "confusion_matrix") {
               const labels = ["Safe", "Suspicious", "Phishing"];
+              const matrixCards = Array.from(panelEl.querySelectorAll(".model-eval-card"));
+              if (matrixCards.length > 0) {
+                const summaries = matrixCards.map((card) => {
+                  const name = cleanTxt(card.querySelector(".model-eval-name")?.textContent) || "Model";
+                  const vals = Array.from(card.querySelectorAll(".cm-cell")).map((cell) => numberFrom(cell.getAttribute("data-val")));
+                  const total = vals.reduce((a, b) => a + b, 0);
+                  const diag = (vals[0] || 0) + (vals[4] || 0) + (vals[8] || 0);
+                  const acc = total > 0 ? ((diag / total) * 100).toFixed(1) + "%" : "—";
+                  return `${name}: ${acc}`;
+                });
+                return detailBlock(
+                  [
+                    { k: "Models shown", v: `${matrixCards.length} base detectors` },
+                    { k: "Accuracy by model", v: summaries.join(" · ") || "—" },
+                    { k: "Class order", v: labels.join(" / ") },
+                    { k: "Scope", v: panelTag },
+                  ],
+                  "Each matrix uses the saved test-set artifact for that detector; rows are actual labels and columns are predicted labels."
+                );
+              }
               const vals = Array.from(panelEl.querySelectorAll(".cm-cell")).map((cell) => numberFrom(cell.getAttribute("data-val")));
               const total = vals.reduce((a, b) => a + b, 0);
               const diag = (vals[0] || 0) + (vals[4] || 0) + (vals[8] || 0);
@@ -2046,12 +2139,13 @@ components.html(
             }
 
             if (panelId === "confidence_calibration") {
-              const badge = cleanTxt(panelEl.querySelector(".ece-badge")?.textContent) || "ECE unavailable";
+              const badges = Array.from(panelEl.querySelectorAll(".ece-badge")).map((badge) => cleanTxt(badge.textContent)).filter(Boolean);
+              const badge = badges.join(" · ") || "ECE unavailable";
               const note = cleanTxt(panelEl.querySelector(".calib-note")?.textContent);
               return detailBlock(
                 [
                   { k: "Method", v: "Post-hoc temperature scaling" },
-                  { k: "Primary metric", v: badge },
+                  { k: "Calibration status", v: badge },
                   { k: "Interpretation", v: "Lower ECE means probability scores are more trustworthy." },
                   { k: "Scope", v: panelTag },
                 ],
@@ -2102,24 +2196,6 @@ components.html(
                   { k: "Scope", v: panelTag },
                 ],
                 "These are the rows where the models split, which is the most direct view of the benchmark behavior."
-              );
-            }
-
-            if (panelId === "robustness_testing") {
-              const cards = Array.from(panelEl.querySelectorAll(".robust-card")).map((card) => {
-                const name = cleanTxt(card.querySelector(".robust-card-title")?.textContent);
-                const gain = cleanTxt(card.querySelector(".robust-gain")?.textContent);
-                return { name, gain, gainN: numberFrom(gain) };
-              });
-              const strongest = [...cards].sort((a, b) => b.gainN - a.gainN)[0] || { name: "—", gain: "—" };
-              return detailBlock(
-                [
-                  { k: "Scenarios tested", v: `${cards.length} evasion patterns` },
-                  { k: "Top recovery", v: `${strongest.name} (${strongest.gain})` },
-                  { k: "Target metric", v: "Macro-F1 (baseline vs augmented)" },
-                  { k: "Scope", v: panelTag },
-                ],
-                "Use this panel to prove resilience against realistic adversarial message perturbations."
               );
             }
 
@@ -2335,8 +2411,7 @@ verdict_slices = [
     ("Safe", safe, "#00ff9f", p_pct + s_pct, 100),
 ]
 
-cm_data = _build_confusion_matrix(safe_count=safe, suspicious_count=s, phishing_count=p)
-confusion_matrix_html = _build_confusion_matrix_html(cm_data, title=f"{PRIMARY_MODEL_LABEL} · Overall")
+confusion_matrix_html = _build_model_confusion_cards(MODEL_SPECS)
 
 # Guard against all-zero rows after strict filters (prevents division by zero in hbar width).
 max_scam = max(1, max([count for _, count, _ in data["scam_types"]], default=0))
@@ -2371,35 +2446,6 @@ perf_rows_html = "".join(
         for cls, model, prec, rec, f1 in PERF_DATA
     ]
 )
-
-robust_cards_html = "".join(
-    [
-        (
-            "<div class='robust-card'>"
-            f"<div class='robust-card-title'>{html.escape(name)}</div>"
-            "<div class='robust-row'><span class='robust-row-label'>Baseline</span>"
-            "<div class='robust-bar-wrap'>"
-            f"<div class='robust-bar-fill before' style='width:{before * 100:.1f}%'></div></div>"
-            f"<span class='robust-val before'>{before:.3f}</span></div>"
-            "<div class='robust-row'><span class='robust-row-label'>Augmented</span>"
-            "<div class='robust-bar-wrap'>"
-            f"<div class='robust-bar-fill after' style='width:{after * 100:.1f}%'></div></div>"
-            f"<span class='robust-val after'>{after:.3f}</span></div>"
-            f"<div class='robust-delta'>↑ {delta} F1 gain</div>"
-            "</div>"
-        )
-        for name, before, after, delta in ROBUST_DATA
-    ]
-)
-
-robust_gain_values = []
-for _, _, _, delta in ROBUST_DATA:
-    try:
-        robust_gain_values.append(float(str(delta).replace("pp", "").replace("+", "").strip()))
-    except Exception:
-        continue
-robust_avg_gain = (sum(robust_gain_values) / len(robust_gain_values)) if robust_gain_values else 0.0
-robust_fill_pct = max(0.0, min(100.0, robust_avg_gain * 10.0))
 
 insight_html = "".join(
     [
@@ -2497,29 +2543,12 @@ language_tag_map = {
 selected_period_tag = period_tag_map.get(period_selected, "7-day rolling")
 selected_language_tag = language_tag_map.get(lang_selected, "all languages")
 selected_context_tag = f"{selected_period_tag} • {selected_language_tag}"
-primary_val_before_ece = _metric_calibration_ece(PRIMARY_MODEL_METRICS, "val", "before_temperature")
-primary_val_after_ece = _metric_calibration_ece(PRIMARY_MODEL_METRICS, "val", "after_temperature")
-primary_test_ece = _metric_ece(PRIMARY_MODEL_METRICS)
-primary_temperature = _metric_temperature(PRIMARY_MODEL_METRICS)
-if primary_val_before_ece is not None and primary_val_after_ece is not None:
-    calibration_copy = (
-        f"Validation ECE moved from <strong>{primary_val_before_ece:.3f}</strong> "
-        f"to <strong>{primary_val_after_ece:.3f}</strong> after temperature scaling."
-    )
-    if primary_test_ece is not None:
-        calibration_copy += f"<br><strong>Test ECE:</strong> {primary_test_ece:.3f}"
-    else:
-        calibration_copy += "<br>Test ECE unavailable."
-    calibration_badge = f"ECE (final): {primary_val_after_ece:.3f}"
-else:
-    calibration_copy = f"Post-hoc temperature scaling is enabled for <strong>{html.escape(PRIMARY_MODEL_LABEL)}</strong>."
-    if primary_test_ece is not None:
-        calibration_copy += f"<br>Test ECE: {primary_test_ece:.3f}"
-    else:
-        calibration_copy += "<br>Calibration metrics unavailable."
-    calibration_badge = f"ECE (test): {primary_test_ece:.3f}" if primary_test_ece is not None else "ECE unavailable"
-if primary_temperature is not None:
-    calibration_copy += f"<br><span class='calib-temp'>Temperature: {primary_temperature:.3f}</span>"
+calibration_model_cards_html = _build_model_calibration_cards(MODEL_SPECS)
+calibration_copy = (
+    "Each detector is evaluated separately with its saved test-set Expected Calibration Error (ECE). "
+    "Temperature scaling adjusts confidence reliability; the deployed user score is still produced by "
+    "the final median ensemble after these base model scores are generated."
+)
 
 st.markdown(
     _render_html_block(
@@ -4093,71 +4122,110 @@ st.markdown(
     .cm-legend-item { display:flex; align-items:center; gap:0.34rem; }
     .cm-legend-swatch { width:12px; height:8px; }
 
-    .calib-perfect { fill:none; stroke:rgba(200,240,224,0.24); stroke-width:1.2; stroke-dasharray:4 4; }
-    .calib-before { fill:none; stroke:#ff3860; stroke-width:1.8; filter: drop-shadow(0 0 2px rgba(255,56,96,.5)); }
-    .calib-after { fill:none; stroke:#00ff9f; stroke-width:2.1; filter: drop-shadow(0 0 4px rgba(0,255,159,.5)); }
-    .calib-note { font-family:'Share Tech Mono', monospace; font-size:0.67rem; color:var(--muted); line-height:1.65; margin-top:0.5rem; }
-    .calib-temp { color:var(--neon2); display:inline-block; margin-top:0.18rem; }
-    .ece-badge { display:inline-block; margin-top:0.45rem; font-family:'Share Tech Mono', monospace; font-size:0.63rem; letter-spacing:0.07em; color:var(--neon); border:1px solid rgba(0,255,159,.34); background:rgba(0,255,159,.06); padding:0.2rem 0.55rem; }
-
-    .robust-summary {
+    .model-eval-grid,
+    .model-calib-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+      gap:0.82rem;
+    }
+    .model-eval-card,
+    .model-calib-card {
+      border:1px solid rgba(0,212,255,0.20);
+      background:rgba(0,0,0,0.22);
+      padding:0.78rem;
+      box-shadow:inset 0 0 18px rgba(0,212,255,0.04);
+    }
+    .model-eval-head,
+    .model-calib-top {
       display:flex;
-      align-items:center;
-      gap:1rem;
-      flex-wrap:wrap;
-      padding:0.84rem 1.08rem;
-      border-bottom:1px solid var(--border);
-      background:rgba(0,0,0,0.2);
+      justify-content:space-between;
+      gap:0.7rem;
+      align-items:flex-start;
+      margin-bottom:0.62rem;
     }
-    .robust-summary-label {
+    .model-eval-role,
+    .model-calib-label {
       font-family:'Share Tech Mono', monospace;
-      font-size:0.65rem;
-      color:var(--muted);
-      letter-spacing:0.08em;
+      font-size:0.58rem;
+      letter-spacing:0.12em;
       text-transform:uppercase;
-      margin-bottom:0.22rem;
+      color:var(--muted);
+      margin-bottom:0.16rem;
     }
-    .robust-summary-val {
+    .model-eval-name,
+    .model-calib-version {
       font-family:'Share Tech Mono', monospace;
-      font-size:1.35rem;
-      font-weight:800;
-      color:var(--neon);
-      text-shadow:0 0 12px rgba(0,255,159,0.38);
+      color:#f0fff8;
+      font-size:0.76rem;
+      font-weight:900;
+      letter-spacing:0.04em;
+      word-break:break-word;
+    }
+    .model-eval-split {
+      font-family:'Share Tech Mono', monospace;
+      font-size:0.55rem;
+      letter-spacing:0.08em;
+      color:var(--neon2);
+      border:1px solid rgba(0,212,255,0.28);
+      background:rgba(0,212,255,0.06);
+      padding:0.18rem 0.42rem;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .model-eval-metrics {
+      display:flex;
+      flex-wrap:wrap;
+      gap:0.35rem;
+      margin-top:0.6rem;
+      font-family:'Share Tech Mono', monospace;
+      font-size:0.58rem;
+      color:var(--muted);
       letter-spacing:0.04em;
     }
-    .robust-summary-desc {
-      font-family:'Share Tech Mono', monospace;
-      font-size:0.62rem;
-      color:var(--muted);
-      letter-spacing:0.06em;
-      margin-left:0.55rem;
+    .model-eval-metrics span,
+    .model-calib-row {
+      border:1px solid rgba(200,240,224,0.10);
+      background:rgba(200,240,224,0.035);
+      padding:0.18rem 0.42rem;
     }
-    .robust-summary-bar { flex:1; min-width:170px; max-width:230px; margin-left:auto; }
-    .robust-summary-bar-track { height:6px; background:rgba(255,255,255,0.05); position:relative; overflow:hidden; }
-    .robust-summary-bar-fill {
-      position:absolute; left:0; top:0; bottom:0;
-      background:linear-gradient(90deg,var(--neon2),var(--neon));
-      box-shadow:0 0 10px rgba(0,255,159,0.4);
-      animation:dashBarGrow 920ms cubic-bezier(0.22, 0.7, 0.28, 1) both;
+    .model-calib-grid { margin-top:0.72rem; }
+    .model-calib-card.good { border-color:rgba(0,255,159,0.28); box-shadow:inset 0 0 20px rgba(0,255,159,0.05); }
+    .model-calib-card.warn { border-color:rgba(255,221,87,0.32); box-shadow:inset 0 0 20px rgba(255,221,87,0.05); }
+    .model-calib-card.risk { border-color:rgba(255,56,96,0.36); box-shadow:inset 0 0 20px rgba(255,56,96,0.06); }
+    .model-calib-score {
+      font-family:'Share Tech Mono', monospace;
+      font-size:0.74rem;
+      color:#f0fff8;
+      letter-spacing:0.04em;
+      margin-bottom:0.48rem;
+    }
+    .model-calib-score strong { color:var(--yellow); font-size:1rem; }
+    .model-calib-row {
+      display:flex;
+      justify-content:space-between;
+      gap:0.6rem;
+      margin-top:0.34rem;
+      font-family:'Share Tech Mono', monospace;
+      font-size:0.60rem;
+      color:var(--muted);
+      letter-spacing:0.04em;
+    }
+    .model-calib-row strong { color:#f0fff8; }
+    .empty-note {
+      font-family:'Share Tech Mono', monospace;
+      color:var(--muted);
+      font-size:0.68rem;
+      letter-spacing:0.04em;
+      padding:0.8rem;
+      border:1px solid rgba(200,240,224,0.12);
+      background:rgba(0,0,0,0.2);
     }
 
-    .robust-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:0.7rem; }
-    .robust-card { background:rgba(0,0,0,0.24); border:1px solid var(--border); padding:0.62rem 0.72rem; }
-    .robust-card-title { font-family:'Share Tech Mono', monospace; font-size:0.62rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.46rem; }
-    .robust-row { display:flex; align-items:center; gap:0.35rem; margin-bottom:0.34rem; }
-    .robust-row-label { width:56px; font-family:'Share Tech Mono', monospace; font-size:0.58rem; color:var(--muted); }
-    .robust-bar-wrap { flex:1; height:6px; background:rgba(255,255,255,0.06); }
-    .robust-bar-fill {
-      height:100%;
-      transform-origin:left center;
-      animation: dashBarGrow 620ms cubic-bezier(0.22, 0.7, 0.28, 1) both;
-    }
-    .robust-bar-fill.before { background:rgba(255,56,96,0.55); box-shadow:0 0 6px rgba(255,56,96,0.28); }
-    .robust-bar-fill.after { background:linear-gradient(90deg,var(--neon2),var(--neon)); box-shadow:0 0 6px rgba(0,255,159,0.28); }
-    .robust-val { width:38px; text-align:right; font-family:'Share Tech Mono', monospace; font-size:0.63rem; }
-    .robust-val.before { color:rgba(255,56,96,.72); }
-    .robust-val.after { color:var(--neon); }
-    .robust-delta { text-align:right; font-family:'Share Tech Mono', monospace; font-size:0.58rem; color:rgba(0,255,159,0.74); margin-top:0.22rem; }
+    .calib-note { font-family:'Share Tech Mono', monospace; font-size:0.67rem; color:var(--muted); line-height:1.65; margin-top:0.5rem; }
+    .ece-badge { display:inline-block; margin-top:0.45rem; font-family:'Share Tech Mono', monospace; font-size:0.63rem; letter-spacing:0.07em; color:var(--neon); border:1px solid rgba(0,255,159,.34); background:rgba(0,255,159,.06); padding:0.2rem 0.55rem; }
+    .ece-badge.good { color:var(--neon); border-color:rgba(0,255,159,.36); background:rgba(0,255,159,.06); }
+    .ece-badge.warn { color:var(--yellow); border-color:rgba(255,221,87,.36); background:rgba(255,221,87,.06); }
+    .ece-badge.risk { color:var(--hot); border-color:rgba(255,56,96,.38); background:rgba(255,56,96,.07); }
 
     .insight-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1rem; margin-bottom:1.2rem; }
     .insight-card { background:rgba(3,15,26,0.92); border:1px solid var(--border); padding:0.72rem 0.84rem; }
@@ -4260,7 +4328,6 @@ st.markdown(
     @media (max-width: 1200px) {
       .stat-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
       .grid-2-1, .grid-2, .grid-1-1-1 { grid-template-columns: 1fr; }
-      .robust-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .insight-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .lang-summary-grid { grid-template-columns: 1fr; }
       .lang-card-grid { grid-template-columns: 1fr; }
@@ -4275,7 +4342,7 @@ st.markdown(
     }
     @media (max-width: 760px) {
       .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .robust-grid, .insight-grid { grid-template-columns: 1fr; }
+      .insight-grid { grid-template-columns: 1fr; }
       .lang-score-grid { grid-template-columns: 1fr; }
       .page-h1 { font-size: 1.55rem; }
       .section-title { font-size: 1.18rem; }
@@ -4319,7 +4386,7 @@ st.markdown(
         <span class='section-code'>// 01</span>
         <h1 class='page-h1'>Technical Dashboard</h1>
       </div>
-      <p class='page-sub'>Research-side analytics for model comparison, calibration, robustness testing, scan logs, and cross-language performance. AI Studio now has its own page in the password-protected Analyst Lab.</p>
+      <p class='page-sub'>Research-side analytics for model comparison, calibration, scan logs, and cross-language performance. AI Studio now has its own page in the password-protected Analyst Lab.</p>
     </div>
     """
     ),
@@ -4504,48 +4571,28 @@ st.markdown(
       </div>
 
       <div class='section-header'><span class='section-label'>// 05</span><span class='section-title'>Calibration & Reliability</span></div>
-      <div class='grid-2'>
+      <div class='grid-single'>
         <div class='panel accent-purple' data-panel-id='confusion_matrix'>
-          <div class='panel-head'><div class='panel-title'>Confusion Matrix</div><span class='panel-tag'>{html.escape(PRIMARY_MODEL_LABEL)} · test set</span></div>
+          <div class='panel-head'><div class='panel-title'>Three-Model Confusion Matrices</div><span class='panel-tag'>baseline · bilstm · indicbert</span></div>
           <div class='panel-body'>{confusion_matrix_html}</div>
         </div>
-
+      </div>
+      <div class='grid-single' style='margin-top:1rem;'>
         <div class='panel accent-red' data-panel-id='confidence_calibration'>
-          <div class='panel-head'><div class='panel-title'>Confidence Calibration</div><span class='panel-tag'>reliability • {html.escape(selected_period_tag)}</span></div>
+          <div class='panel-head'><div class='panel-title'>Three-Model Confidence Calibration</div><span class='panel-tag'>ECE · temperature scaling</span></div>
           <div class='panel-body'>
-            {_build_calibration_svg()}
+            {calibration_model_cards_html}
             <div class='calib-note'>
-              {calibration_copy}<br>
-              Calibration improves reliability of risk score thresholds and automatic decision notes.
+              {calibration_copy}
             </div>
-            <span class='ece-badge'>{html.escape(calibration_badge)} WELL CALIBRATED</span>
           </div>
         </div>
       </div>
 
-      <div class='section-header'><span class='section-label'>// 06</span><span class='section-title'>Robustness Testing — Evasion Tactics</span></div>
-      <div class='panel accent-orange' data-panel-id='robustness_testing' style='margin-bottom:1rem;'>
-        <div class='robust-summary'>
-          <div>
-            <div class='robust-summary-label'>// avg F1 recovery across all evasion types</div>
-            <div style='display:flex;align-items:baseline;gap:0.52rem;flex-wrap:wrap;'>
-              <span class='robust-summary-val'>+{robust_avg_gain:.1f}pp</span>
-              <span class='robust-summary-desc'>macro-F1 gain after augmentation · {html.escape(PRIMARY_MODEL_LABEL.lower())} model</span>
-            </div>
-          </div>
-          <div class='robust-summary-bar'>
-            <div style='font-family:\"Share Tech Mono\",monospace;font-size:0.58rem;color:var(--muted);margin-bottom:0.25rem;letter-spacing:0.06em'>augmented model recovery</div>
-            <div class='robust-summary-bar-track'><div class='robust-summary-bar-fill' style='width:{robust_fill_pct:.1f}%'></div></div>
-          </div>
-        </div>
-        <div class='panel-head' style='border-top:none'><div class='panel-title'>F1: Clean vs Perturbed (with Augmentation)</div><span class='panel-tag'>macro-F1 • 6 perturbation types</span></div>
-        <div class='panel-body'><div class='robust-grid'>{robust_cards_html}</div></div>
-      </div>
-
-      <div class='section-header'><span class='section-label'>// 07</span><span class='section-title'>Key Findings</span></div>
+      <div class='section-header'><span class='section-label'>// 06</span><span class='section-title'>Key Findings</span></div>
       <div class='insight-grid'>{insight_html}</div>
 
-      <div class='section-header'><span class='section-label'>// 08</span><span class='section-title'>Recent Scan Log</span></div>
+      <div class='section-header'><span class='section-label'>// 07</span><span class='section-title'>Recent Scan Log</span></div>
       <div class='panel accent-cyan' data-panel-id='recent_scan_log'>
         <div class='panel-head'><div class='panel-title'>Live Scan Log</div><span class='panel-tag'><span class='live-dot' style='width:6px;height:6px;display:inline-block;margin-right:6px;border-radius:50%;background:var(--neon);box-shadow:0 0 6px var(--neon);vertical-align:middle;'></span>auto-refresh 30s</span></div>
         <div class='log-toolbar'>
