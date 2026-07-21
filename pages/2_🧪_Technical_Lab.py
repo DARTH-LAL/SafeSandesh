@@ -609,6 +609,79 @@ def _model_entries_from_row(row: pd.Series) -> list[dict]:
     ]
 
 
+def _technical_export_frame(df: pd.DataFrame, period_label: str, language_label: str) -> pd.DataFrame:
+    """Export the full dashboard filter slice, not the shortened recent-scan log."""
+    columns = [
+        "scan_id",
+        "timestamp_utc",
+        "period_filter",
+        "language_filter",
+        "message_language",
+        "message",
+        "final_verdict",
+        "final_risk_score",
+        "final_confidence_pct",
+        "scam_type",
+        "final_score_method",
+        "decision_label",
+        "decision_state",
+        "reason",
+        "baseline_model",
+        "baseline_verdict",
+        "baseline_score",
+        "baseline_confidence_pct",
+        "bilstm_model",
+        "bilstm_verdict",
+        "bilstm_score",
+        "bilstm_confidence_pct",
+        "indicbert_model",
+        "indicbert_verdict",
+        "indicbert_score",
+        "indicbert_confidence_pct",
+    ]
+    if df.empty:
+        return pd.DataFrame(columns=columns)
+
+    export_rows: list[dict[str, object]] = []
+    slot_names = ["baseline", "bilstm", "indicbert"]
+    for _, row in df.sort_values("ts", ascending=False).iterrows():
+        ts = row.get("ts")
+        if pd.notna(ts):
+            timestamp = pd.Timestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            timestamp = ""
+
+        record: dict[str, object] = {
+            "scan_id": row.get("id", ""),
+            "timestamp_utc": timestamp,
+            "period_filter": period_label,
+            "language_filter": language_label,
+            "message_language": str(row.get("language_name", "Unknown") or "Unknown"),
+            "message": str(row.get("message", "") or ""),
+            "final_verdict": str(row.get("label", "") or ""),
+            "final_risk_score": int(float(row.get("risk_score", 0) or 0)),
+            "final_confidence_pct": round(float(row.get("confidence_pct", 0.0) or 0.0), 1),
+            "scam_type": str(row.get("scam_type", "Other") or "Other"),
+            "final_score_method": str(row.get("final_score_method", "") or ""),
+            "decision_label": _decision_label_display(row.get("decision_label"), bool(row.get("review_recommended", False))),
+            "decision_state": str(row.get("decision_state", "") or ""),
+            "reason": str(row.get("reason", "") or ""),
+        }
+
+        for slot_name, entry in zip(slot_names, _model_entries_from_row(row)):
+            confidence = float(entry.get("model_confidence", 0.0) or 0.0)
+            if confidence <= 1.0:
+                confidence *= 100.0
+            record[f"{slot_name}_model"] = str(entry.get("model_version", "") or entry.get("model_source", "") or "")
+            record[f"{slot_name}_verdict"] = str(entry.get("label", "") or "")
+            record[f"{slot_name}_score"] = int(float(entry.get("risk_score", 0) or 0))
+            record[f"{slot_name}_confidence_pct"] = round(max(0.0, min(100.0, confidence)), 1)
+
+        export_rows.append(record)
+
+    return pd.DataFrame(export_rows, columns=columns)
+
+
 def _timeline_from_df(df: pd.DataFrame) -> dict[str, list]:
     if df.empty or df["ts"].dropna().empty:
         return FALLBACK_TIMELINE
@@ -2361,12 +2434,14 @@ df = _as_df(rows)
 
 period_selected = _sanitize_period(_query_param_value("period", "7d"))
 lang_selected = _sanitize_language(_query_param_value("lang", "all"))
+filtered_df = _apply_dashboard_filters(df, period_selected, lang_selected)
 
 if df.empty:
     data = _build_dashboard_data(df)
+elif filtered_df.empty:
+    data = _empty_dashboard_data()
 else:
-    filtered_df = _apply_dashboard_filters(df, period_selected, lang_selected)
-    data = _build_dashboard_data(filtered_df) if not filtered_df.empty else _empty_dashboard_data()
+    data = _build_dashboard_data(filtered_df)
 
 stat_trends = _build_stat_trends(df, period_selected, lang_selected)
 
@@ -2524,8 +2599,6 @@ lang_conic = ", ".join([f"{c} {a}% {b}%" for _, _, c, a, b in lang_slices]) or "
 
 now_ts = datetime.now().strftime("%H:%M:%S")
 
-csv_bytes = pd.DataFrame(data["log_rows"]).to_csv(index=False).encode("utf-8") if data["log_rows"] else b""
-
 period_tag_map = {
     "24h": "24-hour window",
     "7d": "7-day rolling",
@@ -2543,6 +2616,9 @@ language_tag_map = {
 selected_period_tag = period_tag_map.get(period_selected, "7-day rolling")
 selected_language_tag = language_tag_map.get(lang_selected, "all languages")
 selected_context_tag = f"{selected_period_tag} • {selected_language_tag}"
+export_df = _technical_export_frame(filtered_df, selected_period_tag, selected_language_tag)
+csv_bytes = export_df.to_csv(index=False).encode("utf-8") if not export_df.empty else b""
+export_suffix = f"{period_selected}_{lang_selected}".replace(" ", "_")
 calibration_model_cards_html = _build_model_calibration_cards(MODEL_SPECS)
 calibration_copy = (
     "Each detector is evaluated separately with its saved test-set Expected Calibration Error (ECE). "
@@ -4444,7 +4520,7 @@ with filters_right:
     st.download_button(
         label="Download CSV",
         data=csv_bytes,
-        file_name="safesandesh_scans.csv",
+        file_name=f"safesandesh_scans_{export_suffix}.csv",
         mime="text/csv",
         key="dash_export_csv",
         disabled=not bool(csv_bytes),
