@@ -27,6 +27,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SCORE_FUSION_MODEL_PATH = ROOT / "data" / "models" / "score_fusion_model.joblib"
 SCORE_FUSION_METRICS_PATH = ROOT / "data" / "models" / "score_fusion_metrics.json"
 BASE_MODEL_ORDER = ("baseline_v3", "bilstm_v3", "indicbert_v3")
+BASE_MODEL_IDENTITIES = {
+    "baseline": ("baseline_v3", "baseline_ml"),
+    "bilstm": ("bilstm_v3", "bilstm_rnn"),
+    "indicbert": ("indicbert_v3", "indicbert_multilingual"),
+}
 ATTRIBUTION_MAX_SEGMENTS = 8
 
 
@@ -213,11 +218,35 @@ def _is_score_layer(version: object, source: object = "", kind: object = "") -> 
 def _base_model_sort_key(item: dict) -> tuple[int, str]:
     version = str(item.get("model_version") or item.get("version") or "").lower()
     source = str(item.get("model_source") or item.get("source") or "").lower()
-    joined = f"{version} {source}"
+    kind = str(item.get("model_kind") or "").lower()
+    joined = f"{version} {source} {kind}"
     for idx, marker in enumerate(("baseline", "bilstm", "indicbert")):
         if marker in joined:
             return (idx, version or source)
     return (len(BASE_MODEL_ORDER), version or source)
+
+
+def _base_model_identity(item: dict, idx: int) -> tuple[str, str, bool]:
+    """Return an honest display identity for real and fallback model outputs."""
+    version = str(item.get("model_version") or item.get("version") or item.get("model_source") or "unknown")
+    source = str(item.get("model_source") or item.get("source") or "unknown")
+    kind = str(item.get("model_kind") or "").strip().lower()
+    is_fallback = (
+        kind == "mock"
+        or "mock_v1" in version.lower()
+        or "mock_model" in source.lower()
+    )
+    if not is_fallback:
+        return version, source, False
+
+    intended_kind = kind if kind in BASE_MODEL_IDENTITIES else ""
+    if not intended_kind and idx < len(BASE_MODEL_ORDER):
+        intended_kind = BASE_MODEL_ORDER[idx].replace("_v3", "")
+    intended_version, intended_source = BASE_MODEL_IDENTITIES.get(
+        intended_kind,
+        (f"base_model_{idx + 1}", "model_unavailable"),
+    )
+    return f"{intended_version} (fallback)", f"{intended_source} · fallback output", True
 
 
 def _base_model_outputs(scan: dict) -> list[dict]:
@@ -278,7 +307,8 @@ def _base_model_outputs(scan: dict) -> list[dict]:
 
 
 def _base_model_role(item: dict, idx: int) -> tuple[str, str]:
-    text = f"{item.get('model_version', '')} {item.get('model_source', '')}".lower()
+    version, source, _ = _base_model_identity(item, idx)
+    text = f"{version} {source}".lower()
     if "baseline" in text:
         return ("Baseline model", "BASELINE")
     if "bilstm" in text:
@@ -295,8 +325,8 @@ def _score_recipe(scan: dict, score: int) -> tuple[str, str]:
     outputs = _base_model_outputs(scan)
     if outputs:
         score_parts = [
-            f"{item.get('model_version', item.get('model_source', 'model'))}={_score_int(item.get('risk_score'))}"
-            for item in outputs[:3]
+            f"{_base_model_identity(item, idx)[0]}={_score_int(item.get('risk_score'))}"
+            for idx, item in enumerate(outputs[:3])
         ]
         scores = [_score_int(item.get("risk_score")) for item in outputs[:3]]
         if method.startswith("score_fusion"):
@@ -317,16 +347,23 @@ def _model_rows(scan: dict, message: str) -> list[dict]:
         rows = []
         for idx, item in enumerate(base_outputs[:3]):
             role, tag = _base_model_role(item, idx)
+            version, source, is_fallback = _base_model_identity(item, idx)
+            stored_reason = str(item.get("reason") or "").strip()
+            if is_fallback:
+                stored_reason = (
+                    f"{version.replace(' (fallback)', '')} could not complete inference for this stored scan, "
+                    "so the system recorded a fallback estimate. Re-run the scan when the model is available."
+                )
             rows.append(
                 {
                     "role": role,
                     "tag": tag,
-                    "version": str(item.get("model_version") or item.get("model_source") or "unknown"),
-                    "source": str(item.get("model_source") or "unknown"),
+                    "version": version,
+                    "source": source,
                     "label": str(item.get("label") or "Unknown"),
                     "score": _score_int(item.get("risk_score")),
                     "confidence": _confidence_pct(item.get("model_confidence")),
-                    "reason": str(item.get("reason") or "Stored base-model vote. Compare it against the final ensemble score."),
+                    "reason": stored_reason or "Stored base-model vote. Compare it against the final ensemble score.",
                     "cue_labels": cue_labels(list(dict.fromkeys(detect_cue_tags(message))), _lang_code(infer_message_language_name(message, fallback=str(scan.get("language") or "English")))),
                 }
             )
